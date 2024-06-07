@@ -2,11 +2,12 @@
 
 export SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+echo -e "[DEBUG] $(date +"%Y-%m-%d %H:%M:%S")"
 echo -e "🚀 build.sh is running in: $SCRIPT_DIR"
 
 # === BEGIN USER CUSTOMIZATION ===
-export DEFAULT_REPO_NAME=template
-export FLATPACK_NAME=template
+export DEFAULT_REPO_NAME=demo
+export FLATPACK_NAME=demo
 # === END USER CUSTOMIZATION ===
 
 source "$SCRIPT_DIR/device.sh" || {
