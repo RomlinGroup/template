@@ -1465,7 +1465,7 @@
 
             tab.classList.add('active');
             document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
-            sessionStorage.setItem('activeTab', tab.dataset.tab); // Update session storage
+            sessionStorage.setItem('activeTab', tab.dataset.tab);
             resizeAllTextareas();
         };
 
@@ -1473,7 +1473,7 @@
         hooksTab.addEventListener('click', () => setActiveTab(hooksTab));
         logTab.addEventListener('click', () => setActiveTab(logTab));
 
-        const activeTab = sessionStorage.getItem('activeTab'); // Get from session storage
+        const activeTab = sessionStorage.getItem('activeTab');
         let initialTab = editorTab;
 
         if (activeTab) {
