@@ -1239,7 +1239,7 @@
 
                     await refreshCommentsFromBackend();
                     document.getElementById('comment-sidebar').style.display = 'block';
-
+                    localStorage.setItem('commentSidebarState', 'shown');
                 } catch (error) {
                     console.error('Failed to add comment:', error);
                     alert('Failed to add comment. Please try again.');
@@ -2216,11 +2216,12 @@
                 editorWrapper.appendChild(editor);
 
                 const commentButton = document.createElement('button');
+
                 commentButton.className = 'comment-button';
                 commentButton.innerHTML = addCommentIcon;
                 commentButton.onclick = () => addCommentToBlock(block);
-                editorWrapper.appendChild(commentButton);
 
+                editorWrapper.appendChild(commentButton);
                 block.appendChild(editorWrapper);
 
                 const controls = document.createElement('div');
