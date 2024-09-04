@@ -42,10 +42,6 @@ tqdm = "4.66.5"
 # ]
 
 [[file]]
-from_source = "index.html"
-to_destination = "index.html"
-
-[[file]]
 from_source = "build.sh"
 to_destination = "build.sh"
 
