@@ -770,6 +770,10 @@
             padding: 20px;
         }
 
+        #output-widget {
+            background: #f0f2ff;
+        }
+
         #save-button {
             margin-left: auto;
             margin-right: 0;
@@ -983,8 +987,8 @@
     <div id="wrapper">
         <h2>Board</h2>
 
-        <div id="hello-widget" class="widget">
-            <p>Hello, World!</p>
+        <div id="output-widget" class="widget">
+            <p>No output available.</p>
         </div> <!-- END .widget -->
 
         <div id="cron-widget" class="widget">
@@ -1373,6 +1377,13 @@
                 reject(e);
             }
         });
+    }
+
+    function checkAndFetchEvalData() {
+        const evalDataFetched = localStorage.getItem('evalDataFetched');
+        if (evalDataFetched === 'true') {
+            fetchEvalData();
+        }
     }
 
     async function checkApiTokenValidity(apiToken) {
@@ -1854,6 +1865,7 @@
                     fetchLatestLogs(sessionStorage.getItem('apiToken'));
                     fetchSchedule();
                     showStatus('Build completed successfully.', true);
+                    localStorage.setItem('evalDataFetched', 'true');
                     break;
                 case 'failed':
                     hideLoadingOverlay();
@@ -2714,12 +2726,6 @@
         // END Tabs
 
         // BEGIN Widgets
-
-        // Hello, World!
-        document.getElementById('hello-widget').addEventListener('click', function () {
-            this.querySelector('p').textContent = 'You clicked the widget!';
-        });
-
         // Schedule
         setScheduleType('manual');
 
@@ -2794,6 +2800,9 @@
 
         checkDatetimeListEmpty();
         fetchSchedule();
+
+        // eval_data.json
+        checkAndFetchEvalData();
         // END Widgets
     });
 </script>
