@@ -1111,6 +1111,10 @@
 
     const comments = [];
 
+    const apiKeyInput = document.getElementById('api-key-input');
+    const apiKeyModal = document.getElementById('api-key-modal');
+    const apiKeySubmit = document.getElementById('api-key-authorize');
+    const commentSidebar = document.getElementById('comment-sidebar');
     const cronPattern = document.getElementById('cron-pattern');
     const cronWidget = document.getElementById('cron-widget');
     const datetimeList = document.getElementById('datetime-list');
@@ -1130,6 +1134,7 @@
     ];
     const CHECK_INTERVAL = 1000;
     const MAX_CONSECUTIVE_ERRORS = 3;
+    const MAX_DISCONNECTED_COUNT = 3;
 
     const getBaseUrl = () => window.location.origin;
 
@@ -1182,6 +1187,7 @@
     let consecutiveErrors = 0;
     let currentPart = 1;
     let currentStepIndex = -1;
+    let disconnectedCount = 0;
     let highlightTimeout;
     let initializationTimeout;
     let isBuilding = false;
@@ -1407,6 +1413,7 @@
     async function checkBuildStatus() {
         try {
             const apiToken = localStorage.getItem('apiToken');
+
             if (!apiToken) {
                 console.error('No API token found');
                 return;
@@ -1470,6 +1477,7 @@
         return null;
     }
 
+
     async function checkHeartbeat(apiToken) {
         const heartbeatDot = document.getElementById('heartbeat-dot');
         const heartbeatTime = document.getElementById('heartbeat-time');
@@ -1483,6 +1491,7 @@
             const response = await fetch(`${getBaseUrl()}/api/heartbeat`, {
                 headers: {'Authorization': `Bearer ${apiToken}`}
             });
+
             if (response.ok) {
                 const data = await response.json();
                 const date = new Date(data.server_time);
@@ -1492,6 +1501,7 @@
                 heartbeatTime.textContent = formattedDate;
                 heartbeatDot.classList.remove('disconnected');
                 heartbeatDot.classList.add('connected');
+                disconnectedCount = 0;
 
                 if (isBuilding) {
                     isBuilding = false;
@@ -1499,13 +1509,27 @@
                     enableInteractions();
                 }
             } else {
-                setDisconnectedState();
+                handleDisconnection();
             }
         } catch (error) {
-            setDisconnectedState();
+            handleDisconnection();
+        }
+
+        function handleDisconnection() {
+            disconnectedCount++;
+            console.log(`Disconnection detected. Count: ${disconnectedCount}`);
+
+            if (disconnectedCount >= MAX_DISCONNECTED_COUNT) {
+                setDisconnectedState();
+            } else {
+                heartbeatTime.textContent = 'Reconnecting';
+                heartbeatDot.classList.remove('connected');
+                heartbeatDot.classList.add('disconnected');
+            }
         }
 
         function setDisconnectedState() {
+            console.log('Connection lost. Resetting app state.');
             heartbeatTime.textContent = 'Disconnected';
             heartbeatDot.classList.remove('connected');
             heartbeatDot.classList.add('disconnected');
@@ -1944,14 +1968,14 @@
                     enableInteractions();
                     break;
                 case 'unknown':
-                    showLoadingOverlay('Checking build status');
                     break;
                 default:
-                    showLoadingOverlay(`Build status: ${status}`);
+                    showLoadingOverlay(status);
             }
+
+            currentStepIndex = -1;
             lastStatus = status;
             lastStep = '';
-            currentStepIndex = -1;
         }
     }
 
@@ -2392,7 +2416,8 @@
     }
 
     function resetAppState() {
-        localStorage.clear();
+        console.log("Resetting app state.");
+        localStorage.removeItem('apiToken');
         window.location.reload();
     }
 
@@ -2517,6 +2542,10 @@
                 manualSchedule.style.display = 'block';
             }
         }
+    }
+
+    function showApiKeyModal() {
+        apiKeyModal.style.display = 'flex';
     }
 
     function showLoadingOverlay(message = 'Please wait') {
@@ -2657,15 +2686,6 @@
     window.addEventListener('resize', resizeAllTextareas);
 
     document.addEventListener('DOMContentLoaded', async () => {
-        const apiKeyInput = document.getElementById('api-key-input');
-        const apiKeyModal = document.getElementById('api-key-modal');
-        const apiKeySubmit = document.getElementById('api-key-authorize');
-        const commentSidebar = document.getElementById('comment-sidebar');
-
-        function showApiKeyModal() {
-            apiKeyModal.style.display = 'flex';
-        }
-
         async function validateAndInitialize(apiToken) {
             try {
 
