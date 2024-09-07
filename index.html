@@ -1323,6 +1323,7 @@
             console.log('Build API response:', buildResponse);
 
             if (buildResponse && (buildResponse.status === 'started' || buildResponse.message === 'Build process started in background.')) {
+                saveBuildStatus('in_progress: Preparing build environment');
                 startBuildStatusCheck();
             } else if (buildResponse && buildResponse.message) {
                 showStatus(buildResponse.message, false);
@@ -1397,6 +1398,14 @@
         const evalDataFetched = localStorage.getItem('evalDataFetched');
         if (evalDataFetched === 'true') {
             fetchEvalData();
+        }
+    }
+
+    function checkAndRestoreBuildStatus() {
+        const savedStatus = localStorage.getItem('buildStatus');
+        if (savedStatus) {
+            handleBuildStatus(savedStatus);
+            startBuildStatusCheck();
         }
     }
 
@@ -1933,6 +1942,8 @@
     }
 
     function handleBuildStatus(status) {
+        saveBuildStatus(status);
+
         if (status.startsWith('in_progress')) {
             const step = status.split(': ')[1] || 'Unknown step';
             const stepIndex = BUILD_STEPS.indexOf(step);
@@ -1954,7 +1965,9 @@
                     fetchLatestLogs(localStorage.getItem('apiToken'));
                     fetchSchedule();
                     showStatus('Build completed successfully.', true);
+
                     localStorage.setItem('evalDataFetched', 'true');
+                    localStorage.removeItem('buildStatus');
                     break;
                 case 'failed':
                     hideLoadingOverlay();
@@ -1962,6 +1975,8 @@
                     showStatus('Build failed. Check logs for details.', false);
                     fetchLatestLogs(localStorage.getItem('apiToken'));
                     fetchSchedule();
+
+                    localStorage.removeItem('buildStatus');
                     break;
                 case 'no_builds':
                     hideLoadingOverlay();
@@ -2434,6 +2449,10 @@
         editor.style.height = `${editor.scrollHeight}px`;
     }
 
+    function saveBuildStatus(status) {
+        localStorage.setItem('buildStatus', status);
+    }
+
     async function saveFile(status = false, apiToken) {
         const parts = Array.from(document.querySelectorAll('.part-python, .part-bash'))
             .map(part => {
@@ -2764,7 +2783,8 @@
         const storedApiToken = localStorage.getItem('apiToken');
 
         if (storedApiToken) {
-            debouncedInitialization(storedApiToken);
+            await debouncedInitialization(storedApiToken);
+            checkAndRestoreBuildStatus(); // Add this line
         } else {
             showApiKeyModal();
         }
