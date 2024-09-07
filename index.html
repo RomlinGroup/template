@@ -1176,6 +1176,7 @@
     let currentPart = 1;
     let currentStepIndex = -1;
     let highlightTimeout;
+    let initializationTimeout;
     let isBuilding = false;
     let lastStatus = '';
     let lastStep = '';
@@ -1451,6 +1452,17 @@
         }
     }
 
+    function checkEvalDataForFile(data, filename, mimetype) {
+        if (data && Array.isArray(data)) {
+            for (const file of data) {
+                if (file.public === `/output/${filename}` && file.type === mimetype) {
+                    return file.public;
+                }
+            }
+        }
+        return null;
+    }
+
     async function checkHeartbeat(apiToken) {
         const heartbeatDot = document.getElementById('heartbeat-dot');
         const heartbeatTime = document.getElementById('heartbeat-time');
@@ -1512,6 +1524,18 @@
         });
 
         return button;
+    }
+
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
     }
 
     function deleteBlock(block) {
@@ -1670,6 +1694,21 @@
             const response = await fetch('eval_data.json');
             if (response.ok) {
                 const data = await response.json();
+
+                // output.txt
+                const outputPath = checkEvalDataForFile(data, 'output.txt', 'text/plain');
+                if (outputPath) {
+                    fetch(outputPath)
+                        .then(response => response.text())
+                        .then(content => document.getElementById('output-widget').innerHTML = `<pre>${content}</pre>`)
+                        .catch(error => {
+                            console.error('Error fetching file:', error);
+                            document.getElementById('output-widget').innerHTML = '<p>Error reading output.txt file.</p>';
+                        });
+                } else {
+                    document.getElementById('output-widget').innerHTML = '<p>No output.txt file found.</p>';
+                }
+
                 evalWidget.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
             } else {
                 throw new Error('File not found');
@@ -1681,7 +1720,7 @@
 
     async function fetchHooks(apiToken) {
         try {
-            const response = await fetch(`${getBaseUrl()}/api/hooks`, {
+            const response = await fetchWithRetry(`${getBaseUrl()}/api/hooks`, {
                 headers: {
                     'Authorization': `Bearer ${apiToken}`
                 }
@@ -1815,6 +1854,18 @@
             console.error('Error fetching the selected log:', error);
             renderLogContent("Error fetching the selected log.");
             showStatus('Error fetching the selected log!', false);
+        }
+    }
+
+    async function fetchWithRetry(url, options, maxRetries = 3) {
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                const response = await fetch(url, options);
+                if (response.ok) return response;
+            } catch (error) {
+                if (i === maxRetries - 1) throw error;
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
         }
     }
 
@@ -1952,6 +2003,7 @@
             initBuildStatusCheck();
         } catch (error) {
             console.error('Error initializing app:', error);
+            showStatus('Failed to initialize app. Please try again.', false);
         }
     }
 
@@ -2659,6 +2711,10 @@
             }
         }
 
+        const debouncedInitialization = debounce((apiToken) => {
+            validateAndInitialize(apiToken);
+        }, 500);
+
         apiKeySubmit.addEventListener('click', async () => {
             const apiKey = apiKeyInput.value.trim();
             if (apiKey) {
@@ -2674,10 +2730,7 @@
         const storedApiToken = sessionStorage.getItem('apiToken');
 
         if (storedApiToken) {
-            const isValid = await validateAndInitialize(storedApiToken);
-            if (!isValid) {
-                showApiKeyModal();
-            }
+            debouncedInitialization(storedApiToken);
         } else {
             showApiKeyModal();
         }
