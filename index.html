@@ -1251,14 +1251,14 @@
             if (comment) {
                 const blockId = block.id;
                 try {
-                    const {commentId, createdAt} = await postComment(blockId, selectedText, comment);
-
+                    await postComment(blockId, selectedText, comment);
                     await refreshCommentsFromBackend();
                     document.getElementById('comment-sidebar').style.display = 'block';
                     localStorage.setItem('commentSidebarState', 'shown');
+                    showStatus('Comment added successfully.', true);
                 } catch (error) {
                     console.error('Failed to add comment:', error);
-                    alert('Failed to add comment. Please try again.');
+                    showStatus('Failed to add comment. Please try again.', false);
                 }
             }
         } else {
@@ -2146,15 +2146,7 @@
             throw new Error(`Failed to add comment: ${response.statusText}`);
         }
 
-        const jsonResponse = await response.json();
-        if (jsonResponse.comment_id) {
-            return {
-                commentId: jsonResponse.comment_id,
-                createdAt: jsonResponse.created_at
-            };
-        } else {
-            throw new Error('comment_id is undefined in response');
-        }
+        return true;
     }
 
     async function refreshCommentsFromBackend() {
