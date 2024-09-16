@@ -211,7 +211,6 @@ async function buildProject(apiToken) {
     try {
         await saveFile(false, apiToken);
         const buildResponse = await callAPI('build', apiToken);
-        console.log('Build API response:', buildResponse);
 
         if (buildResponse && (buildResponse.status === 'started' || buildResponse.message === 'Build process started in background.')) {
             saveBuildStatus('in_progress: Preparing build environment');
@@ -490,7 +489,7 @@ async function deleteComment(commentId) {
             responseData = JSON.parse(responseText);
         } catch (parseError) {
             console.error('Error parsing response JSON:', parseError);
-            responseData = { detail: 'Unable to parse server response' };
+            responseData = {detail: 'Unable to parse server response'};
         }
 
         if (!response.ok) {
@@ -911,8 +910,6 @@ async function initializeApp(apiToken) {
 async function loadDefaultFile(apiToken) {
     try {
         const json = await callAPI('load_file', apiToken, 'GET', {filename: 'custom.sh'});
-
-        console.log(json)
 
         if (json && json.content) {
             originalContent = json.content;
