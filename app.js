@@ -231,58 +231,55 @@ async function buildProject(apiToken) {
 }
 
 async function callAPI(endpoint, apiToken, method = "POST", data = null) {
-    return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        const url = `${getBaseUrl()}/api/${endpoint}`;
+    try {
+        let url = `${getBaseUrl()}/api/${endpoint}`;
 
-        xhr.open(method, url, true);
-        xhr.setRequestHeader("Authorization", `Bearer ${apiToken}`);
+        const headers = {
+            "Authorization": `Bearer ${apiToken}`
+        };
+
+        setCSRFHeader(headers);
+
+        const options = {
+            method: method,
+            headers: headers
+        };
 
         if (method === "POST" && data) {
-            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-        }
-
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4) {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    try {
-                        const json = JSON.parse(xhr.responseText);
-                        console.log(`API call to ${endpoint} succeeded:`, json);
-                        resolve(json);
-                    } catch (e) {
-                        console.error('Error parsing response JSON:', e);
-                        reject(e);
-                    }
-                } else {
-                    console.error(`HTTP Error: ${xhr.status} ${xhr.statusText}`);
-                    console.error('Response:', xhr.responseText);
-                    reject(new Error(`HTTP Error: ${xhr.status} ${xhr.statusText}`));
-                }
-            }
-        };
-
-        xhr.onerror = function () {
-            console.error('Network error');
-            reject(new Error('Network error'));
-        };
-
-        try {
-            if (method === "POST" && data) {
+            if (data instanceof FormData) {
+                options.body = data;
+            } else {
+                headers["Content-Type"] = "application/x-www-form-urlencoded";
                 const params = new URLSearchParams();
                 for (const key in data) {
                     if (data.hasOwnProperty(key)) {
                         params.append(key, data[key]);
                     }
                 }
-                xhr.send(params.toString());
-            } else {
-                xhr.send();
+                options.body = params.toString();
             }
-        } catch (e) {
-            console.error('Request failed:', e);
-            reject(e);
+        } else if (method === "GET" && data) {
+            const params = new URLSearchParams(data);
+            url += `?${params.toString()}`;
         }
-    });
+
+        // console.log('API Request:', {url, method, headers, body: options.body});
+
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        if (error.message.includes('403')) {
+            if (await handleCSRFError()) {
+                return callAPI(endpoint, apiToken, method, data);
+            }
+        }
+        throw error;
+    }
 }
 
 function checkAndFetchEvalData() {
@@ -311,41 +308,31 @@ async function checkApiTokenValidity(apiToken) {
 }
 
 async function checkBuildStatus() {
+    const apiToken = localStorage.getItem('apiToken');
+
+    if (!apiToken) {
+        console.error('No API token found');
+        return;
+    }
+
     try {
-        const apiToken = localStorage.getItem('apiToken');
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-        if (!apiToken) {
-            console.error('No API token found');
-            return;
-        }
+        const data = await callAPI('build-status', apiToken, 'GET', null, controller.signal);
+        clearTimeout(timeoutId);
 
-        const response = await fetch(`${getBaseUrl()}/api/build-status`, {
-            headers: {
-                'Authorization': `Bearer ${apiToken}`
-            },
-            signal: AbortSignal.timeout(10000)
-        });
+        handleBuildStatus(data.status);
+        consecutiveErrors = 0;
 
-        if (response.ok) {
-            const data = await response.json();
-            handleBuildStatus(data.status);
-            consecutiveErrors = 0;
-
-            if (data.status === 'completed' || data.status === 'failed') {
-                await fetch(`${getBaseUrl()}/api/clear-build-status`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${apiToken}`
-                    }
-                });
-            }
-        } else {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        if (data.status === 'completed' || data.status === 'failed') {
+            await callAPI('clear-build-status', apiToken, 'POST');
         }
     } catch (error) {
-
         if (error.name === 'AbortError') {
             console.warn('Build status check timed out');
+        } else {
+            console.error('Error checking build status:', error);
         }
 
         consecutiveErrors++;
@@ -388,28 +375,20 @@ async function checkHeartbeat(apiToken) {
     }
 
     try {
-        const response = await fetch(`${getBaseUrl()}/api/heartbeat`, {
-            headers: {'Authorization': `Bearer ${apiToken}`}
+        const data = await callAPI('heartbeat', apiToken, 'GET');
+        const date = new Date(data.server_time);
+        const formattedDate = date.toLocaleString('sv-SE', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
         });
+        heartbeatTime.textContent = formattedDate;
+        heartbeatDot.classList.remove('disconnected');
+        heartbeatDot.classList.add('connected');
+        disconnectedCount = 0;
 
-        if (response.ok) {
-            const data = await response.json();
-            const date = new Date(data.server_time);
-            const formattedDate = date.toLocaleString('sv-SE', {
-                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-            });
-            heartbeatTime.textContent = formattedDate;
-            heartbeatDot.classList.remove('disconnected');
-            heartbeatDot.classList.add('connected');
-            disconnectedCount = 0;
-
-            if (isBuilding) {
-                isBuilding = false;
-                hideLoadingOverlay();
-                enableInteractions();
-            }
-        } else {
-            handleDisconnection();
+        if (isBuilding) {
+            isBuilding = false;
+            hideLoadingOverlay();
+            enableInteractions();
         }
     } catch (error) {
         handleDisconnection();
@@ -475,95 +454,119 @@ function deleteBlock(block) {
 
 async function deleteComment(commentId) {
     const apiToken = localStorage.getItem('apiToken');
-    const url = `${getBaseUrl()}/api/comments/${commentId}`;
+    const csrfToken = localStorage.getItem('csrfToken');
+
+    // Ensure commentId is a number
+    const numericCommentId = parseInt(commentId, 10);
+    if (isNaN(numericCommentId)) {
+        console.error('Invalid comment ID:', commentId);
+        showStatus('Error: Invalid comment ID', false);
+        return;
+    }
+
+    const headers = {
+        'Authorization': `Bearer ${apiToken}`,
+        'X-CSRF-Token': csrfToken,
+        'Content-Type': 'application/json'
+    };
 
     try {
-        const response = await fetch(url, {
+        console.log(`Attempting to delete comment with ID: ${numericCommentId}`);
+        console.log('Request headers:', headers);
+
+        const response = await fetch(`${getBaseUrl()}/api/comments/${numericCommentId}`, {
             method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${apiToken}`
-            }
+            headers: headers
         });
 
-        if (response.ok) {
-            showStatus('Comment deleted successfully.', true);
-            await refreshCommentsFromBackend();
-        } else {
-            const errorData = await response.json();
-            showStatus(`Failed to delete comment: ${errorData.detail}`, false);
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+        const responseText = await response.text();
+        console.log('Raw response:', responseText);
+
+        let responseData;
+        try {
+            responseData = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Error parsing response JSON:', parseError);
+            responseData = { detail: 'Unable to parse server response' };
         }
+
+        if (!response.ok) {
+            throw new Error(`Server error: ${responseData.detail || response.statusText}`);
+        }
+
+        console.log('Delete comment response:', responseData);
+        showStatus(responseData.message || 'Comment deleted successfully.', true);
+        await refreshCommentsFromBackend();
     } catch (error) {
         console.error('Error deleting comment:', error);
-        showStatus('Failed to delete comment. Please try again.', false);
+        console.error('Error details:', {
+            commentId: numericCommentId,
+            endpoint: `${getBaseUrl()}/api/comments/${numericCommentId}`,
+            headers: headers
+        });
+        showStatus(`Failed to delete comment: ${error.message}`, false);
     }
 }
 
 async function deleteHook(hookId) {
     const apiToken = localStorage.getItem('apiToken');
     try {
-        const response = await fetch(`${getBaseUrl()}/api/hooks/${hookId}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${apiToken}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            showStatus(`Failed to delete hook: ${errorData.detail}`, false);
-        } else {
-            showStatus('Hook deleted successfully!', true);
-            document.querySelector(`[data-hook-id="${hookId}"]`).remove();
-        }
+        await callAPI(`hooks/${hookId}`, apiToken, 'DELETE');
+        showStatus('Hook deleted successfully!', true);
+        document.querySelector(`[data-hook-id="${hookId}"]`).remove();
     } catch (error) {
         console.error('Error deleting hook:', error);
         showStatus('Error deleting hook!', false);
     }
 }
 
-function deleteScheduleEntry(scheduleId, datetimeIndex = null) {
+async function deleteScheduleEntry(scheduleId, datetimeIndex = null) {
     const apiToken = localStorage.getItem('apiToken');
-    const url = datetimeIndex !== null
-        ? `/api/schedule/${scheduleId}?datetime_index=${datetimeIndex}`
-        : `/api/schedule/${scheduleId}`;
+    const csrfToken = localStorage.getItem('csrfToken');
 
-    fetch(url, {
-        method: 'DELETE',
-        headers: {
-            'Authorization': `Bearer ${apiToken}`
-        }
-    })
-        .then(response => {
-            return response.json().then(data => ({
-                status: response.status,
-                data: data
-            }));
-        })
-        .then(({status, data}) => {
-            if (status >= 200 && status < 300) {
-                showStatus(data.message, true);
+    const endpoint = datetimeIndex !== null
+        ? `schedule/${scheduleId}?datetime_index=${datetimeIndex}`
+        : `schedule/${scheduleId}`;
 
-                if (datetimeIndex !== null) {
-                    const scheduleContainer = document.querySelector(`[data-schedule-id="${scheduleId}"]`);
-                    const datetimesContainer = scheduleContainer.querySelector('.datetimes-container');
+    const headers = {
+        'Authorization': `Bearer ${apiToken}`,
+        'X-CSRF-Token': csrfToken,
+        'Content-Type': 'application/json'
+    };
 
-                    if (datetimesContainer.children.length === 1) {
-                        deleteScheduleEntry(scheduleId);
-                    } else {
-                        fetchSchedule();
-                    }
-                } else {
-                    fetchSchedule();
-                }
-            } else {
-                showStatus(data.detail || 'An error occurred', false);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showStatus('An error occurred during deletion. Please try again.', false);
+    try {
+        const response = await fetch(`${getBaseUrl()}/api/${endpoint}`, {
+            method: 'DELETE',
+            headers: headers
         });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Server error: ${errorData.detail || response.statusText}`);
+        }
+
+        const data = await response.json();
+        showStatus(data.message || 'Schedule entry deleted successfully.', true);
+
+        if (datetimeIndex !== null) {
+            const scheduleContainer = document.querySelector(`[data-schedule-id="${scheduleId}"]`);
+            const datetimesContainer = scheduleContainer.querySelector('.datetimes-container');
+
+            if (datetimesContainer.children.length === 1) {
+                await deleteScheduleEntry(scheduleId);
+            } else {
+                await fetchSchedule();
+            }
+        } else {
+            await fetchSchedule();
+        }
+    } catch (error) {
+        console.error('Error deleting schedule entry:', error);
+        showStatus(`Error during deletion: ${error.message}`, false);
+    }
 }
 
 function disableInteractions() {
@@ -582,20 +585,9 @@ function enableInteractions() {
 
 async function fetchComments() {
     const apiToken = localStorage.getItem('apiToken');
-    const url = `${getBaseUrl()}/api/comments`;
 
     try {
-        const response = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${apiToken}`
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to fetch comments: ${response.statusText}`);
-        }
-
-        const fetchedComments = await response.json();
+        const fetchedComments = await callAPI('comments', apiToken, 'GET');
 
         comments.length = 0;
 
@@ -617,6 +609,12 @@ async function fetchComments() {
     } catch (error) {
         console.error('Error fetching comments:', error);
     }
+}
+
+async function fetchCSRFToken() {
+    const response = await fetch('/csrf-token');
+    const data = await response.json();
+    return data.csrf_token;
 }
 
 async function fetchEvalData() {
@@ -657,19 +655,8 @@ async function fetchEvalData() {
 
 async function fetchHooks(apiToken) {
     try {
-        const response = await fetchWithRetry(`${getBaseUrl()}/api/hooks`, {
-            headers: {
-                'Authorization': `Bearer ${apiToken}`
-            }
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            renderHooks(data.hooks);
-        } else {
-            console.error('Error response:', response.status, response.statusText);
-            showStatus('Error fetching hooks!', false);
-        }
+        const data = await callAPI('hooks', apiToken, 'GET');
+        renderHooks(data.hooks);
     } catch (error) {
         console.error('Fetch error:', error);
         showStatus('Error fetching hooks!', false);
@@ -678,32 +665,21 @@ async function fetchHooks(apiToken) {
 
 async function fetchLatestLogs(apiToken) {
     try {
-        const response = await fetch('/api/logs', {
-            headers: {
-                'Authorization': `Bearer ${apiToken}`
-            }
-        });
+        const data = await callAPI('logs', apiToken, 'GET');
+        const logs = data.logs;
 
-        if (response.ok) {
-            const data = await response.json();
-            const logs = data.logs;
+        populateLogDropdown(logs);
 
-            populateLogDropdown(logs);
+        if (logs.length > 0) {
+            const latestLog = logs[0];
+            const logDropdown = document.getElementById('log-dropdown');
 
-            if (logs.length > 0) {
-                const latestLog = logs[0];
-                const logDropdown = document.getElementById('log-dropdown');
-
-                logDropdown.value = latestLog;
-                logDropdown.dispatchEvent(new Event('change'));
-            } else {
-                console.log('No log files found.');
-                renderLogContent("No log files found.");
-                showStatus('No log files found!', false);
-            }
+            logDropdown.value = latestLog;
+            logDropdown.dispatchEvent(new Event('change'));
         } else {
-            renderLogContent("Error fetching log files.");
-            showStatus('Error fetching log files!', false);
+            console.log('No log files found.');
+            renderLogContent("No log files found.");
+            showStatus('No log files found!', false);
         }
     } catch (error) {
         console.error('Error fetching log files:', error);
@@ -740,18 +716,8 @@ async function fetchSchedule() {
     }
 
     try {
-        const response = await fetch(`${getBaseUrl()}/api/schedule`, {
-            headers: {
-                'Authorization': `Bearer ${apiToken}`
-            }
-        });
-        if (response.ok) {
-            const data = await response.json();
-            renderExistingSchedule(data);
-        } else {
-            console.error('Failed to fetch schedule:', response.statusText);
-            showStatus('Failed to fetch schedule. Please try again.', false);
-        }
+        const data = await callAPI('schedule', apiToken, 'GET');
+        renderExistingSchedule(data);
     } catch (error) {
         console.error('Error fetching schedule:', error);
         showStatus('An error occurred while fetching the schedule. Please try again.', false);
@@ -770,27 +736,16 @@ async function fetchSelectedLog() {
     }
 
     try {
-        const response = await fetch(`${getBaseUrl()}/api/logs/${selectedLog}`, {
-            headers: {
-                'Authorization': `Bearer ${apiToken}`
-            }
-        });
-        if (response.ok) {
-            const data = await response.json();
-            renderLogContent(data.log);
-        } else {
-            if (response.status === 404) {
-                renderLogContent(`Log file not found: ${selectedLog}`);
-            } else {
-                console.error('Failed to fetch the selected log:', response.statusText);
-                renderLogContent("Error fetching the selected log.");
-                showStatus('Error fetching the selected log!', false);
-            }
-        }
+        const data = await callAPI(`logs/${selectedLog}`, apiToken, 'GET');
+        renderLogContent(data.log);
     } catch (error) {
         console.error('Error fetching the selected log:', error);
-        renderLogContent("Error fetching the selected log.");
-        showStatus('Error fetching the selected log!', false);
+        if (error.message.includes('404')) {
+            renderLogContent(`Log file not found: ${selectedLog}`);
+        } else {
+            renderLogContent("Error fetching the selected log.");
+            showStatus('Error fetching the selected log!', false);
+        }
     }
 }
 
@@ -808,19 +763,8 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
 
 async function getEvalJSON(apiToken) {
     try {
-        const response = await fetch(`${getBaseUrl()}/eval_build.json`, {
-            headers: {
-                'Authorization': `Bearer ${apiToken}`
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Network response was not ok: ${response.statusText}`);
-        }
-
-        const data = await response.json();
+        const data = await callAPI('eval_build.json', apiToken, 'GET');
         return data;
-
     } catch (error) {
         console.error('Fetch error:', error);
         throw error;
@@ -890,6 +834,17 @@ function handleBuildStatusError() {
     showStatus('Unable to check build status. The server may be unavailable.', false);
 }
 
+async function handleCSRFError() {
+    try {
+        const newToken = await fetchCSRFToken();
+        localStorage.setItem('csrfToken', newToken);
+        return true;
+    } catch (error) {
+        console.error('Failed to refresh CSRF token:', error);
+        return false;
+    }
+}
+
 function hideLoadingOverlay() {
     document.getElementById('loading-overlay').style.display = 'none';
 }
@@ -926,40 +881,40 @@ function initBuildStatusCheck() {
 
 async function initializeApp(apiToken) {
     try {
-        await fetch(`${getBaseUrl()}/api/clear-build-status`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiToken}`
-            }
-        });
+        const csrfToken = await fetchCSRFToken();
+        localStorage.setItem('csrfToken', csrfToken);
 
-        setupEventListeners(apiToken);
-        checkHeartbeat(apiToken);
-        setInterval(() => checkHeartbeat(apiToken), 1000);
+        await callAPI('clear-build-status', apiToken, 'POST');
 
-        await loadDefaultFile(apiToken);
-        await fetchComments(apiToken);
-        await fetchHooks(apiToken);
-        await fetchLatestLogs(apiToken);
-        await fetchSchedule(apiToken);
+        await Promise.all([
+            setupEventListeners(apiToken),
+            checkHeartbeat(apiToken),
+            loadDefaultFile(apiToken),
+            fetchComments(apiToken),
+            fetchHooks(apiToken),
+            fetchLatestLogs(apiToken),
+            fetchSchedule(apiToken)
+        ]);
 
         initBuildStatusCheck();
+        setInterval(() => checkHeartbeat(apiToken), 1000);
     } catch (error) {
         console.error('Error initializing app:', error);
-        showStatus('Failed to initialize app. Please try again.', false);
+        if (error.name === 'TypeError' && error.message.includes('NetworkError')) {
+            showStatus('Network error. Please check your connection and try again.', false);
+        } else {
+            showStatus('Failed to initialize app. Please try again.', false);
+        }
     }
 }
 
 async function loadDefaultFile(apiToken) {
     try {
-        const response = await fetch(`${getBaseUrl()}/load_file?filename=custom.sh&_=${Date.now()}`, {
-            headers: {
-                'Authorization': `Bearer ${apiToken}`
-            }
-        });
+        const json = await callAPI('load_file', apiToken, 'GET', {filename: 'custom.sh'});
 
-        if (response.ok) {
-            const json = await response.json();
+        console.log(json)
+
+        if (json && json.content) {
             originalContent = json.content;
             renderFileContents(originalContent);
             resizeAllTextareas();
@@ -967,11 +922,25 @@ async function loadDefaultFile(apiToken) {
             document.querySelectorAll('.editor').forEach(editor => {
                 addEventListenersToEditor(editor);
             });
+
         } else {
-            console.error('Error loading file:', response.statusText);
+            throw new Error('Received invalid data structure from server');
         }
     } catch (error) {
         console.error('Error loading file:', error);
+
+        if (error.message.includes('404')) {
+            console.error('File not found. Please check if the file exists on the server.');
+            showStatus('Error: File not found. Please contact support.', false);
+        } else if (error.message.includes('403')) {
+            console.error('Access forbidden. You may not have permission to access this file.');
+            showStatus('Error: Access to file forbidden. Please contact support.', false);
+        } else {
+            showStatus('Error loading default file. Please try again later.', false);
+        }
+
+        originalContent = '';
+        renderFileContents(originalContent);
     }
 }
 
@@ -1017,28 +986,39 @@ function populateLogDropdown(logs) {
 
 async function postComment(blockId, selectedText, comment) {
     const apiToken = localStorage.getItem('apiToken');
-    const url = `${getBaseUrl()}/api/comments`;
+    const csrfToken = localStorage.getItem('csrfToken');
 
-    const payload = {
+    const payload = JSON.stringify({
         block_id: blockId,
         selected_text: selectedText,
         comment: comment
-    };
-
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiToken}`
-        },
-        body: JSON.stringify(payload)
     });
 
-    if (!response.ok) {
-        throw new Error(`Failed to add comment: ${response.statusText}`);
-    }
+    try {
+        const headers = {
+            'Authorization': `Bearer ${apiToken}`,
+            'X-CSRF-Token': csrfToken,
+            'Content-Type': 'application/json'
+        };
 
-    return true;
+        const response = await fetch(`${getBaseUrl()}/api/comments`, {
+            method: 'POST',
+            headers: headers,
+            body: payload
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Server error: ${errorData.detail}`);
+        }
+
+        const responseData = await response.json();
+        console.log('Comment added successfully:', responseData);
+        return true;
+    } catch (error) {
+        console.error('Error in postComment:', error);
+        throw new Error(`Failed to add comment: ${error.message}`);
+    }
 }
 
 async function refreshCommentsFromBackend() {
@@ -1339,79 +1319,99 @@ async function saveFile(status = false, apiToken) {
     const parts = Array.from(document.querySelectorAll('.part-python, .part-bash'))
         .map(part => {
             const editor = part.querySelector('.editor');
-
             if (!editor) return null;
 
-            let code = editor.innerText;
-
-            code = code.replace(/\n{3,}/g, '\n\n').replace(/\n+$/, '');
-
-            if (code === "") return null;
+            let code = editor.innerText.trim().replace(/\n{3,}/g, '\n\n');
+            if (!code) return null;
 
             const type = part.classList.contains('part-python') ? 'part_python' : 'part_bash';
+            if (type === 'part_bash') code = code.replace(/\$/g, '\\$');
 
-            if (type === 'part_bash') {
-                code = code.replace(/\$/g, '\\$');
-            }
-
-            if (part.classList.contains('disabled')) {
-                return `disabled ${type} """\n${code}\n"""`;
-            } else {
-                return `${type} """\n${code}\n"""`;
-            }
+            return part.classList.contains('disabled')
+                ? `disabled ${type} """\n${code}\n"""`
+                : `${type} """\n${code}\n"""`;
         })
-        .filter(Boolean);
+        .filter(Boolean)
+        .join('\n');
+
+    if (!parts) return;
 
     const formData = new FormData();
     formData.append('filename', 'custom.sh');
-    formData.append('content', parts.join('\n'));
+    formData.append('content', parts);
 
     try {
-        const response = await fetch('/save_file', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'Authorization': `Bearer ${apiToken}`
-            }
-        });
+        const csrfToken = localStorage.getItem('csrfToken');
+        const headers = {'X-CSRF-Token': csrfToken};
 
-        const responseText = await response.text();
-        if (status !== false) {
-            showStatus(response.ok ? 'Saved successfully!' : 'Save failed!', response.ok);
+        const response = await callAPI('save_file', apiToken, 'POST', formData, headers);
+
+        if (response.message === "File saved successfully!") {
+            showStatus('Saved successfully!', true);
+        } else {
+            showStatus('Save failed!', false);
         }
 
-        if (response.ok) {
+        if (response.message === "File saved successfully!") {
             window.scrollTo(0, 0);
         }
+
     } catch (error) {
         console.error('Error saving file:', error);
-        if (status !== false) {
-            showStatus('Error saving file!', false);
-        }
+        showStatus('Error saving file!', false);
     }
 }
 
 async function sendScheduleToServer(scheduleData) {
     const apiToken = localStorage.getItem('apiToken');
+    const csrfToken = localStorage.getItem('csrfToken');
+
+    const headers = {
+        'Authorization': `Bearer ${apiToken}`,
+        'X-CSRF-Token': csrfToken,
+        'Content-Type': 'application/json'
+    };
+
     try {
         const response = await fetch(`${getBaseUrl()}/api/schedule`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiToken}`
-            },
+            headers: headers,
             body: JSON.stringify(scheduleData)
         });
 
-        if (response.ok) {
-            showStatus('Schedule saved successfully!', true);
-            await fetchSchedule();
-        } else {
-            showStatus('Failed to save schedule.', false);
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Server error: ${errorData.detail || response.statusText}`);
         }
+
+        const responseData = await response.json();
+        console.log('Schedule saved successfully:', responseData);
+        showStatus('Schedule saved successfully!', true);
+        await fetchSchedule();
     } catch (error) {
         console.error('Error saving schedule:', error);
-        showStatus('Error saving schedule.', false);
+        showStatus(`Error saving schedule: ${error.message}`, false);
+    }
+}
+
+function setCSRFHeader(headers) {
+    const csrfToken = localStorage.getItem('csrfToken');
+    if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+    }
+}
+
+function setScheduleType(type) {
+    const input = cronWidget.querySelector(`input[name="schedule-type"][value="${type}"]`);
+    if (input) {
+        input.checked = true;
+        if (type === 'recurring') {
+            recurringSchedule.style.display = 'block';
+            manualSchedule.style.display = 'none';
+        } else {
+            recurringSchedule.style.display = 'none';
+            manualSchedule.style.display = 'block';
+        }
     }
 }
 
@@ -1428,20 +1428,6 @@ function setupEventListeners(apiToken) {
         saveButton.addEventListener('click', () => saveFile(true, apiToken));
     } else {
         console.error('One or more action buttons are missing.');
-    }
-}
-
-function setScheduleType(type) {
-    const input = cronWidget.querySelector(`input[name="schedule-type"][value="${type}"]`);
-    if (input) {
-        input.checked = true;
-        if (type === 'recurring') {
-            recurringSchedule.style.display = 'block';
-            manualSchedule.style.display = 'none';
-        } else {
-            recurringSchedule.style.display = 'none';
-            manualSchedule.style.display = 'block';
-        }
     }
 }
 
@@ -1539,14 +1525,70 @@ function toggleCommentSidebar() {
     }
 }
 
-function verifyCode(apiToken) {
-    callAPI('verify', apiToken);
+async function validateAndInitialize(apiToken) {
+    try {
+        if (!apiToken) {
+            console.error("No API token provided.");
+            alert("Please enter a valid API token.");
+            return false;
+        }
+
+        const response = await callAPI('validate_token', apiToken, 'POST', {api_token: apiToken});
+
+        console.log("API validation response:", response);
+
+        if (response.message === 'API token is valid.') {
+            console.log("API token is valid. Storing in localStorage.");
+            localStorage.setItem('apiToken', apiToken);
+
+            await initializeApp(apiToken);
+            document.getElementById('api-key-modal').style.display = 'none';
+            return true;
+        } else {
+            console.error('API token validation failed:', response.message);
+            alert('API token validation failed. Please try again.');
+            localStorage.removeItem('apiToken');
+            return false;
+        }
+    } catch (error) {
+        console.error('Error during API token validation:', error);
+
+        if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+            alert('Network error. Please check your connection and try again.');
+        } else if (error.message.includes('401')) {
+            console.error('Unauthorized: Invalid API token.');
+            alert('Please enter a valid API token.');
+        } else {
+            alert(`Failed to validate API token. ${error.message}`);
+        }
+
+        localStorage.removeItem('apiToken');
+        return false;
+    }
+}
+
+async function verifyCode(apiToken) {
+    try {
+        const csrfToken = localStorage.getItem('csrfToken');
+        const headers = {'X-CSRF-Token': csrfToken};
+        const response = await callAPI('verify', apiToken, 'POST', null, headers);
+
+        if (response.message === "Verification process completed successfully.") {
+            showStatus('Verification successful!', true);
+        } else {
+            showStatus('Verification failed!', false);
+        }
+
+    } catch (error) {
+        console.error('Error during verification:', error);
+        showStatus('Error during verification!', false);
+    }
 }
 
 document.getElementById('hook-form').addEventListener('submit', async function (event) {
     event.preventDefault();
-
     const apiToken = localStorage.getItem('apiToken');
+    const csrfToken = localStorage.getItem('csrfToken');
     const hookName = document.getElementById('hook-name').value.trim();
     const hookType = document.getElementById('hook-type').value;
     const hookScript = document.getElementById('hook-script').value.trim();
@@ -1557,7 +1599,8 @@ document.getElementById('hook-form').addEventListener('submit', async function (
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiToken}`
+                    'Authorization': `Bearer ${apiToken}`,
+                    'X-CSRF-Token': csrfToken
                 },
                 body: JSON.stringify({
                     hook_name: hookName,
@@ -1568,15 +1611,14 @@ document.getElementById('hook-form').addEventListener('submit', async function (
 
             if (response.ok) {
                 const data = await response.json();
-
                 await fetchHooks(apiToken);
-
                 showStatus('Hook added successfully!', true);
             } else {
                 const data = await response.json();
                 showStatus(`Error: ${data.detail}`, false);
             }
         } catch (error) {
+            console.error('Error adding hook:', error);
             showStatus(`Error: ${error.message}`, false);
         }
     } else {
@@ -1587,76 +1629,22 @@ document.getElementById('hook-form').addEventListener('submit', async function (
 window.addEventListener('resize', resizeAllTextareas);
 
 document.addEventListener('DOMContentLoaded', async () => {
-    async function validateAndInitialize(apiToken) {
-        try {
-
-            if (!apiToken) {
-                console.error("No API token provided.");
-                alert("Please enter a valid API token.");
-                return false;
-            }
-
-            const formData = new FormData();
-            formData.append('api_token', apiToken);
-
-            const response = await fetch(`${getBaseUrl()}/api/validate_token`, {
-                method: 'POST',
-                body: formData
-            });
-
-            if (response.status === 401) {
-                console.error('Unauthorized: Invalid API token.');
-                alert('Please enter a valid API token.');
-                localStorage.removeItem('apiToken');
-                return false;
-            }
-
-            if (!response.ok) {
-                console.error(`Error: ${response.status} - ${response.statusText}`);
-                alert(`Failed to validate API token. Server responded with status ${response.status}.`);
-                localStorage.removeItem('apiToken');
-                return false;
-            }
-
-            const data = await response.json();
-            console.log("API validation response:", data);
-
-            if (data.message === 'API token is valid.') {
-                console.log("API token is valid. Storing in localStorage.");
-                localStorage.setItem('apiToken', apiToken);
-
-                await initializeApp(apiToken);
-                document.getElementById('api-key-modal').style.display = 'none';
-                return true;
-            } else {
-                console.error('API token validation failed:', data.message);
-                alert('API token validation failed. Please try again.');
-                localStorage.removeItem('apiToken');
-                return false;
-            }
-        } catch (error) {
-            console.error('Error during API token validation:', error);
-
-            if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-                alert('Network error. Please check your connection and try again.');
-            }
-
-            localStorage.removeItem('apiToken');
-            return false;
-        }
-    }
-
     const debouncedInitialization = debounce((apiToken) => {
         validateAndInitialize(apiToken);
     }, 500);
 
     apiKeySubmit.addEventListener('click', async () => {
+        console.log('Validating the API token')
+
         const apiKey = apiKeyInput.value.trim();
+
         if (apiKey) {
             const isValid = await validateAndInitialize(apiKey);
+
             if (!isValid) {
                 showApiKeyModal();
             }
+
         } else {
             alert('Please enter a valid API token.');
         }
@@ -1666,7 +1654,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (storedApiToken) {
         await debouncedInitialization(storedApiToken);
-        checkAndRestoreBuildStatus(); // Add this line
+        checkAndRestoreBuildStatus();
     } else {
         showApiKeyModal();
     }
@@ -1677,6 +1665,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     const savedSidebarState = localStorage.getItem('commentSidebarState');
+
     if (savedSidebarState === 'shown') {
         commentSidebar.style.display = 'block';
     } else {
