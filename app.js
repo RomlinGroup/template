@@ -355,14 +355,13 @@ function checkDatetimeListEmpty() {
 function checkEvalDataForFile(data, filename, mimetype) {
     if (data && Array.isArray(data)) {
         for (const file of data) {
-            if (file.public === `/output/${filename}` && file.type === mimetype) {
+            if (file.public === `/${filename}` && file.type === mimetype) {
                 return file.public;
             }
         }
     }
     return null;
 }
-
 
 async function checkHeartbeat(apiToken) {
     const heartbeatDot = document.getElementById('heartbeat-dot');
@@ -618,14 +617,15 @@ async function fetchCSRFToken() {
 
 async function fetchEvalData() {
     try {
-        const response = await fetch('eval_data.json');
+        const response = await fetch('/output/eval_data.json');
         if (response.ok) {
             const data = await response.json();
+            console.log('Eval data:', data);
 
-            // output.txt
-            const outputPath = checkEvalDataForFile(data, 'output.txt', 'text/plain');
+            const outputPath = data[0].public;
+            console.log('Output path:', outputPath);
+
             const outputWidget = document.getElementById('output-widget');
-
             if (outputPath) {
                 fetch(outputPath)
                     .then(response => response.text())
@@ -762,7 +762,7 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
 
 async function getEvalJSON(apiToken) {
     try {
-        const data = await callAPI('eval_build.json', apiToken, 'GET');
+        const data = await callAPI('output/eval_build.json', apiToken, 'GET');
         return data;
     } catch (error) {
         console.error('Fetch error:', error);
