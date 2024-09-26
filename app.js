@@ -91,7 +91,7 @@ async function abortBuild(apiToken) {
     try {
         const response = await callAPI('abort-build', apiToken, 'POST');
         if (response.message === "Build process aborted successfully.") {
-            showStatus('Build aborted.', false);
+            showStatus('Build process aborted.', false);
             stopBuildStatusCheck();
             hideLoadingOverlay();
             enableInteractions();
