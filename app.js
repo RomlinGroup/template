@@ -23,6 +23,7 @@ const BUILD_STEPS = [
     'Packaging application',
     'Running build script'
 ];
+
 const CHECK_INTERVAL = 5000;
 const MAX_CONSECUTIVE_ERRORS = 5;
 const MAX_DISCONNECTED_COUNT = 5;
@@ -229,7 +230,7 @@ function showAbortButton() {
     if (!abortButton) {
         abortButton = document.createElement('button');
         abortButton.id = 'abort-build-button';
-        abortButton.textContent = 'Abort Build';
+        abortButton.textContent = 'Abort build';
         abortButton.onclick = () => abortBuild(localStorage.getItem('apiToken'));
         loadingOverlay.appendChild(abortButton);
     }
@@ -300,8 +301,6 @@ async function callAPI(endpoint, apiToken, method = "POST", data = null) {
             const params = new URLSearchParams(data);
             url += `?${params.toString()}`;
         }
-
-        // console.log('API Request:', {url, method, headers, body: options.body});
 
         const response = await fetch(url, options);
 
@@ -496,7 +495,6 @@ async function deleteComment(commentId) {
     const apiToken = localStorage.getItem('apiToken');
     const csrfToken = localStorage.getItem('csrfToken');
 
-    // Ensure commentId is a number
     const numericCommentId = parseInt(commentId, 10);
     if (isNaN(numericCommentId)) {
         console.error('Invalid comment ID:', commentId);
@@ -827,7 +825,7 @@ function handleBuildStatus(status) {
             console.log(`Build in progress: ${step}`);
             showLoadingOverlay(`${step}`);
             disableInteractions();
-            showAbortButton(); // This now ensures the abort button is clickable
+            showAbortButton();
             currentStepIndex = stepIndex;
             lastStatus = status;
             lastStep = step;
@@ -842,7 +840,6 @@ function handleBuildStatus(status) {
                 fetchEvalData();
                 fetchLatestLogs(localStorage.getItem('apiToken'));
                 fetchSchedule();
-                showStatus(`Build ${status}.`, status === 'completed');
                 localStorage.removeItem('buildStatus');
                 break;
             case 'no_builds':
