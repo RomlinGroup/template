@@ -509,15 +509,11 @@ textarea {
 #abort-build-button {
     margin-top: 20px;
     padding: 5px 10px;
-    background-color: #ff4d4d;
-    color: white;
+    background: #ff8d80;
+    color: #000;
     border: none;
     border-radius: 3px;
     cursor: pointer;
-}
-
-#abort-build-button:hover {
-    background-color: #ff3333;
 }
 
 #add-bash-button,
