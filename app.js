@@ -87,6 +87,23 @@ let lastStep = '';
 let manualDatetimes = [];
 let originalContent = '';
 
+async function abortBuild(apiToken) {
+    try {
+        const response = await callAPI('abort-build', apiToken, 'POST');
+        if (response.message === "Build process aborted successfully.") {
+            showStatus('Build process aborted.', true);
+            stopBuildStatusCheck();
+            hideLoadingOverlay();
+            enableInteractions();
+        } else {
+            showStatus('Failed to abort build process.', false);
+        }
+    } catch (error) {
+        console.error('Error aborting build:', error);
+        showStatus('Error aborting build process.', false);
+    }
+}
+
 function addBashBlock() {
     addBlock('bash');
 }
@@ -205,6 +222,23 @@ function addPythonBlock() {
     addBlock('python');
 }
 
+function showAbortButton() {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    let abortButton = document.getElementById('abort-build-button');
+
+    if (!abortButton) {
+        abortButton = document.createElement('button');
+        abortButton.id = 'abort-build-button';
+        abortButton.textContent = 'Abort Build';
+        abortButton.onclick = () => abortBuild(localStorage.getItem('apiToken'));
+        loadingOverlay.appendChild(abortButton);
+    }
+
+    abortButton.style.display = 'block';
+    abortButton.disabled = false;
+    abortButton.style.pointerEvents = 'auto';
+}
+
 async function buildProject(apiToken) {
     disableInteractions();
 
@@ -215,8 +249,13 @@ async function buildProject(apiToken) {
         if (buildResponse && (buildResponse.status === 'started' || buildResponse.message === 'Build process started in background.')) {
             saveBuildStatus('in_progress: Preparing build environment');
             startBuildStatusCheck();
+            showAbortButton();
+        } else if (buildResponse && buildResponse.message === "A build is already in progress.") {
+            showStatus('A build is already in progress.', false);
+            enableInteractions();
         } else if (buildResponse && buildResponse.message) {
             showStatus(buildResponse.message, false);
+            enableInteractions();
         } else {
             throw new Error('Unexpected response from build API');
         }
@@ -424,12 +463,15 @@ function createControlElement(className, innerHTML, onClick) {
     return element;
 }
 
-function createToggleButton(block) {
-    const button = createControlElement('toggle-button', crossedEyeIcon, () => {
-        toggleBlock(block);
-        button.innerHTML = block.classList.contains('disabled') ? regularEyeIcon : crossedEyeIcon;
-    });
+function updateToggleButtonIcon(button, block) {
+    button.innerHTML = block.classList.contains('disabled') ? crossedEyeIcon : regularEyeIcon;
+}
 
+function createToggleButton(block) {
+    const button = createControlElement('toggle-button', regularEyeIcon, () => {
+        toggleBlock(block);
+        updateToggleButtonIcon(button, block);
+    });
     return button;
 }
 
@@ -568,14 +610,14 @@ async function deleteScheduleEntry(scheduleId, datetimeIndex = null) {
 }
 
 function disableInteractions() {
-    document.querySelectorAll('button, .action, .editor').forEach(el => {
+    document.querySelectorAll('button:not(#abort-build-button), .action, .editor').forEach(el => {
         el.setAttribute('disabled', 'true');
         el.style.pointerEvents = 'none';
     });
 }
 
 function enableInteractions() {
-    document.querySelectorAll('button, .action, .editor').forEach(el => {
+    document.querySelectorAll('button:not(#abort-build-button), .action, .editor').forEach(el => {
         el.removeAttribute('disabled');
         el.style.pointerEvents = 'auto';
     });
@@ -785,6 +827,7 @@ function handleBuildStatus(status) {
             console.log(`Build in progress: ${step}`);
             showLoadingOverlay(`${step}`);
             disableInteractions();
+            showAbortButton(); // This now ensures the abort button is clickable
             currentStepIndex = stepIndex;
             lastStatus = status;
             lastStep = step;
@@ -792,23 +835,14 @@ function handleBuildStatus(status) {
     } else if (status !== lastStatus) {
         switch (status) {
             case 'completed':
+            case 'failed':
+            case 'aborted':
                 hideLoadingOverlay();
                 enableInteractions();
                 fetchEvalData();
                 fetchLatestLogs(localStorage.getItem('apiToken'));
                 fetchSchedule();
-                showStatus('Build completed successfully.', true);
-
-                localStorage.setItem('evalDataFetched', 'true');
-                localStorage.removeItem('buildStatus');
-                break;
-            case 'failed':
-                hideLoadingOverlay();
-                enableInteractions();
-                showStatus('Build failed. Check logs for details.', false);
-                fetchLatestLogs(localStorage.getItem('apiToken'));
-                fetchSchedule();
-
+                showStatus(`Build ${status}.`, status === 'completed');
                 localStorage.removeItem('buildStatus');
                 break;
             case 'no_builds':
@@ -845,7 +879,14 @@ async function handleCSRFError() {
 }
 
 function hideLoadingOverlay() {
-    document.getElementById('loading-overlay').style.display = 'none';
+    const loadingOverlay = document.getElementById('loading-overlay');
+    loadingOverlay.style.display = 'none';
+
+    const abortButton = document.getElementById('abort-build-button');
+    if (abortButton) {
+        abortButton.style.display = 'none';
+        abortButton.disabled = true;
+    }
 }
 
 function highlightBlock(blockId) {
@@ -1207,7 +1248,10 @@ function renderFileContents(contents) {
             controls.appendChild(createControlElement('move-up', arrowUpIcon, () => moveBlockUp(block)));
             controls.appendChild(createControlElement('move-down', arrowDownIcon, () => moveBlockDown(block)));
             controls.appendChild(createControlElement('delete-button', editorTrashIcon, () => deleteBlock(block)));
-            controls.appendChild(createToggleButton(block));
+
+            const toggleButton = createToggleButton(block);
+            updateToggleButtonIcon(toggleButton, block);
+            controls.appendChild(toggleButton);
 
             block.appendChild(controls);
 
@@ -1426,6 +1470,11 @@ function setupEventListeners(apiToken) {
     } else {
         console.error('One or more action buttons are missing.');
     }
+
+    const abortButton = document.getElementById('abort-build-button');
+    if (abortButton) {
+        abortButton.addEventListener('click', () => abortBuild(apiToken));
+    }
 }
 
 function showApiKeyModal() {
@@ -1624,6 +1673,15 @@ document.getElementById('hook-form').addEventListener('submit', async function (
 });
 
 window.addEventListener('resize', resizeAllTextareas);
+
+document.addEventListener('DOMContentLoaded', function () {
+    const abortButton = document.getElementById('abort-build-button');
+    if (abortButton) {
+        abortButton.addEventListener('click', function () {
+            abortBuild();
+        });
+    }
+});
 
 document.addEventListener('DOMContentLoaded', async () => {
     const debouncedInitialization = debounce((apiToken) => {
