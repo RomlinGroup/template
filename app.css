@@ -62,6 +62,10 @@ textarea {
     margin-right: 10px;
 }
 
+.audio-file-output {
+    margin-top: 20px;
+}
+
 .color-label {
     height: 5px;
     left: 0;

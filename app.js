@@ -614,11 +614,54 @@ function disableInteractions() {
     });
 }
 
+function displayAudioFile(file, container) {
+    const audioElement = document.createElement('audio');
+    audioElement.controls = true;
+    audioElement.autoplay = true;
+    audioElement.src = file.public;
+
+    const fileNameElement = document.createElement('p');
+    fileNameElement.textContent = file.public.split('/').pop();
+
+    const audioContainer = document.createElement('div');
+    audioContainer.classList.add('audio-file-output');
+    audioContainer.appendChild(audioElement);
+
+    container.appendChild(audioContainer);
+}
+
 function enableInteractions() {
     document.querySelectorAll('button:not(#abort-build-button), .action, .editor').forEach(el => {
         el.removeAttribute('disabled');
         el.style.pointerEvents = 'auto';
     });
+}
+
+async function fetchAndDisplayTextFile(file, container) {
+    try {
+        const response = await fetch(file.public);
+        if (response.ok) {
+            const content = await response.text();
+            const trimmedContent = content.trim();
+
+            const fileNameElement = document.createElement('p');
+            fileNameElement.textContent = file.public.split('/').pop();
+
+            const preElement = document.createElement('pre');
+            preElement.textContent = trimmedContent;
+
+            const fileContainer = document.createElement('div');
+            fileContainer.classList.add('text-file-output');
+            fileContainer.appendChild(preElement);
+
+            container.appendChild(fileContainer);
+        } else {
+            throw new Error(`Error reading ${file.public}`);
+        }
+    } catch (error) {
+        console.error('Error fetching text file:', error);
+        container.innerHTML += `<p>Error reading ${file.public}: ${error.message}</p>`;
+    }
 }
 
 async function fetchComments() {
@@ -656,31 +699,37 @@ async function fetchCSRFToken() {
 }
 
 async function fetchEvalData() {
+    const allowedFiles = ['output.txt', 'output.wav'];
+
     try {
         const response = await fetch('/output/eval_data.json');
         if (response.ok) {
             const data = await response.json();
-            console.log('Eval data:', data);
-
-            const outputPath = data[0].public;
-            console.log('Output path:', outputPath);
 
             const outputWidget = document.getElementById('output-widget');
-            if (outputPath) {
-                fetch(outputPath)
-                    .then(response => response.text())
-                    .then(content => {
-                        const trimmedContent = content.trim();
-                        outputWidget.innerHTML = `<pre>${trimmedContent}</pre>`;
-                        outputWidget.classList.add('text-file-output');
-                    })
-                    .catch(error => {
-                        console.error('Error fetching file:', error);
-                        outputWidget.innerHTML = '<p>Error reading output.txt file.</p>';
-                        outputWidget.classList.remove('text-file-output');
-                    });
+            const evalWidget = document.getElementById('eval-widget');
+            outputWidget.innerHTML = '';
+            evalWidget.innerHTML = '';
+
+            let hasOutput = false;
+
+            for (const file of data) {
+                const fileName = file.public.split('/').pop();
+                if (allowedFiles.includes(fileName)) {
+                    if (file.type === 'text/plain') {
+                        await fetchAndDisplayTextFile(file, outputWidget);
+                        hasOutput = true;
+                    } else if (file.type === 'audio/x-wav') {
+                        displayAudioFile(file, outputWidget);
+                        hasOutput = true;
+                    }
+                }
+            }
+
+            if (hasOutput) {
+                outputWidget.classList.add('text-file-output');
             } else {
-                outputWidget.innerHTML = '<p>No output.txt file found.</p>';
+                outputWidget.classList.remove('text-file-output');
             }
 
             evalWidget.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
@@ -688,6 +737,7 @@ async function fetchEvalData() {
             throw new Error('File not found');
         }
     } catch (error) {
+        const evalWidget = document.getElementById('eval-widget');
         evalWidget.innerHTML = `<p>Could not load eval_data.json: ${error.message}</p>`;
     }
 }
@@ -802,10 +852,23 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
 
 async function getEvalJSON(apiToken) {
     try {
-        const data = await callAPI('output/eval_build.json', apiToken, 'GET');
-        return data;
+        const response = await fetch('/output/eval_data.json', {
+            headers: {
+                'Authorization': `Bearer ${apiToken}`
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                console.warn('eval_data.json not found. This may be normal if no build has been run yet.');
+                return null;
+            }
+            throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+        }
+
+        return await response.json();
     } catch (error) {
-        console.error('Fetch error:', error);
+        console.error('Error fetching eval_data.json:', error);
         throw error;
     }
 }
@@ -930,7 +993,8 @@ async function initializeApp(apiToken) {
             fetchComments(apiToken),
             fetchHooks(apiToken),
             fetchLatestLogs(apiToken),
-            fetchSchedule(apiToken)
+            fetchSchedule(apiToken),
+            loadEvalAndOutputFiles(apiToken)
         ]);
 
         initBuildStatusCheck();
@@ -942,6 +1006,33 @@ async function initializeApp(apiToken) {
         } else {
             showStatus('Failed to initialize app. Please try again.', false);
         }
+    }
+}
+
+async function loadEvalAndOutputFiles(apiToken) {
+    try {
+        await fetchEvalData();
+        console.log('Eval data fetched successfully');
+    } catch (error) {
+        console.warn('Error fetching eval data:', error);
+    }
+
+    try {
+        const evalData = await getEvalJSON(apiToken);
+        const evalWidget = document.getElementById('eval-widget');
+
+        if (evalData !== null) {
+            evalWidget.innerHTML = `<pre>${JSON.stringify(evalData, null, 2)}</pre>`;
+            console.log('Eval data processed successfully');
+        } else {
+            evalWidget.innerHTML = '<p>No eval_data.json found. This may be normal if no build has been run yet.</p>';
+            console.log('No eval_data.json found.');
+        }
+    } catch (error) {
+        console.error('Error processing eval data:', error);
+        const evalWidget = document.getElementById('eval-widget');
+        evalWidget.innerHTML = `<p>Error processing eval data: ${error.message}</p>`;
+        showStatus('Error processing eval data. Some information may be missing.', false);
     }
 }
 
@@ -1707,6 +1798,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (storedApiToken) {
         await debouncedInitialization(storedApiToken);
         checkAndRestoreBuildStatus();
+        await loadEvalAndOutputFiles(storedApiToken);
     } else {
         showApiKeyModal();
     }
