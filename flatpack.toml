@@ -42,16 +42,16 @@ tqdm = "4.66.5"
 # ]
 
 [[file]]
+from_source = "custom.json"
+to_destination = "custom.json"
+
+[[file]]
 from_source = "build.sh"
 to_destination = "build.sh"
 
 [[file]]
 from_source = "device.sh"
 to_destination = "device.sh"
-
-[[file]]
-from_source = "custom.json"
-to_destination = "custom.json"
 
 [[run]]
 command = "chmod +x"
@@ -60,7 +60,3 @@ file = "build.sh"
 [[run]]
 command = "chmod +x"
 file = "device.sh"
-
-[[run]]
-command = "chmod +x"
-file = "custom.json"
