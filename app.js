@@ -1038,12 +1038,14 @@ async function loadEvalAndOutputFiles(apiToken) {
 
 async function loadDefaultFile(apiToken) {
     try {
-        const json = await callAPI('load_file', apiToken, 'GET', {filename: 'custom.sh'});
+        const json = await callAPI('load_file', apiToken, 'GET', {filename: 'custom.json'});
 
         if (json && json.content) {
-            originalContent = json.content;
-            renderFileContents(originalContent);
-            resizeAllTextareas();
+            const base64Content = json.content;
+            const decodedContent = decodeURIComponent(escape(atob(base64Content)));
+            const codeBlocks = JSON.parse(decodedContent);
+
+            renderFileContents(codeBlocks);
 
             document.querySelectorAll('.editor').forEach(editor => {
                 addEventListenersToEditor(editor);
@@ -1056,17 +1058,12 @@ async function loadDefaultFile(apiToken) {
         console.error('Error loading file:', error);
 
         if (error.message.includes('404')) {
-            console.error('File not found. Please check if the file exists on the server.');
             showStatus('Error: File not found. Please contact support.', false);
         } else if (error.message.includes('403')) {
-            console.error('Access forbidden. You may not have permission to access this file.');
             showStatus('Error: Access to file forbidden. Please contact support.', false);
         } else {
             showStatus('Error loading default file. Please try again later.', false);
         }
-
-        originalContent = '';
-        renderFileContents(originalContent);
     }
 }
 
@@ -1275,89 +1272,73 @@ function renderExistingSchedule(data) {
     }
 }
 
-function renderFileContents(contents) {
+function renderFileContents(codeBlocks) {
     const fileContentElement = document.getElementById('file-content');
     fileContentElement.innerHTML = '';
 
-    const parts = contents.split(/((?:disabled )?part_[a-z]+ """[\s\S]*?""")/).filter(Boolean);
-    parts.forEach(part => {
-        const match = part.match(/(disabled )?(part_[a-z]+) """([\s\S]*?)"""/);
-        if (match) {
-            const isDisabled = !!match[1];
-            const type = match[2];
-            let code = match[3].trim();
+    codeBlocks.forEach(blockData => {
+        const {type, disabled, code} = blockData;
 
-            if (type === 'part_bash') {
-                code = code.replace(/\\\$/g, '$');
-            }
+        const block = document.createElement('div');
+        block.className = `part-${type}`;
+        if (disabled) block.classList.add('disabled');
 
-            const block = document.createElement('div');
-            block.className = type.replace('_', '-');
+        const uniqueId = `part-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        block.id = uniqueId;
 
-            if (isDisabled) block.classList.add('disabled');
+        const colorLabel = document.createElement('div');
+        colorLabel.className = 'color-label';
+        block.appendChild(colorLabel);
 
-            const uniqueId = `part-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-            block.id = uniqueId;
+        const editorWrapper = document.createElement('div');
+        editorWrapper.className = 'editor-wrapper';
+        editorWrapper.style.position = 'relative';
 
-            const colorLabel = document.createElement('div');
-            colorLabel.className = 'color-label';
-            block.appendChild(colorLabel);
+        const editor = document.createElement('div');
+        editor.className = 'editor';
+        editor.contentEditable = disabled ? 'false' : 'true';
 
-            const editorWrapper = document.createElement('div');
-            editorWrapper.className = 'editor-wrapper';
-            editorWrapper.style.position = 'relative';
+        editor.textContent = code;
 
-            const editor = document.createElement('div');
-            editor.className = 'editor';
-            editor.contentEditable = isDisabled ? 'false' : 'true';
+        editor.style.whiteSpace = 'pre-wrap';
 
-            code = code.replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
+        editorWrapper.appendChild(editor);
 
-            editor.innerHTML = code;
-            editorWrapper.appendChild(editor);
+        const commentButton = document.createElement('button');
+        commentButton.className = 'comment-button';
+        commentButton.innerHTML = addCommentIcon;
+        commentButton.onclick = () => addCommentToBlock(block);
+        editorWrapper.appendChild(commentButton);
 
-            const commentButton = document.createElement('button');
+        block.appendChild(editorWrapper);
 
-            commentButton.className = 'comment-button';
-            commentButton.innerHTML = addCommentIcon;
-            commentButton.onclick = () => addCommentToBlock(block);
+        const controls = document.createElement('div');
+        controls.className = 'controls';
 
-            editorWrapper.appendChild(commentButton);
-            block.appendChild(editorWrapper);
+        controls.appendChild(createControlElement('handle', type));
+        controls.appendChild(createControlElement('move-up', arrowUpIcon, () => moveBlockUp(block)));
+        controls.appendChild(createControlElement('move-down', arrowDownIcon, () => moveBlockDown(block)));
+        controls.appendChild(createControlElement('delete-button', editorTrashIcon, () => deleteBlock(block)));
 
-            const controls = document.createElement('div');
-            controls.className = 'controls';
+        const toggleButton = createToggleButton(block);
+        updateToggleButtonIcon(toggleButton, block);
+        controls.appendChild(toggleButton);
 
-            controls.appendChild(createControlElement('handle', type.replace('part_', '')));
-            controls.appendChild(createControlElement('move-up', arrowUpIcon, () => moveBlockUp(block)));
-            controls.appendChild(createControlElement('move-down', arrowDownIcon, () => moveBlockDown(block)));
-            controls.appendChild(createControlElement('delete-button', editorTrashIcon, () => deleteBlock(block)));
+        block.appendChild(controls);
 
-            const toggleButton = createToggleButton(block);
-            updateToggleButtonIcon(toggleButton, block);
-            controls.appendChild(toggleButton);
+        fileContentElement.appendChild(block);
 
-            block.appendChild(controls);
-
-            fileContentElement.appendChild(block);
-
-            if (isDisabled) {
-                block.classList.add('disabled');
-                editor.contentEditable = 'false';
-                editor.style.pointerEvents = 'none';
-                const controls = block.querySelectorAll('.move-up, .move-down, .delete-button');
-                controls.forEach(control => control.style.display = 'none');
-                const commentButton = block.querySelector('.comment-button');
-                if (commentButton) commentButton.style.display = 'none';
-            }
+        if (disabled) {
+            block.classList.add('disabled');
+            editor.contentEditable = 'false';
+            editor.style.pointerEvents = 'none';
+            const controlElements = block.querySelectorAll('.move-up, .move-down, .delete-button');
+            controlElements.forEach(control => control.style.display = 'none');
+            commentButton.style.display = 'none';
         }
     });
 
-    document.getElementById('file-content').classList.add('loaded');
+    fileContentElement.classList.add('loaded');
 }
 
 function renderHooks(hooks) {
@@ -1445,29 +1426,28 @@ function saveBuildStatus(status) {
 }
 
 async function saveFile(status = false, apiToken) {
-    const parts = Array.from(document.querySelectorAll('.part-python, .part-bash'))
+    const blocks = Array.from(document.querySelectorAll('.part-python, .part-bash'))
         .map(part => {
             const editor = part.querySelector('.editor');
             if (!editor) return null;
 
-            let code = editor.innerText.trim().replace(/\n{3,}/g, '\n\n');
-            if (!code) return null;
+            let code = editor.innerText || editor.textContent;
+            code = code.replace(/\n{3,}/g, '\n\n');
 
-            const type = part.classList.contains('part-python') ? 'part_python' : 'part_bash';
-            if (type === 'part_bash') code = code.replace(/\$/g, '\\$');
+            const type = part.classList.contains('part-python') ? 'python' : 'bash';
+            const disabled = part.classList.contains('disabled');
 
-            return part.classList.contains('disabled')
-                ? `disabled ${type} """\n${code}\n"""`
-                : `${type} """\n${code}\n"""`;
+            return {type, disabled, code};
         })
-        .filter(Boolean)
-        .join('\n');
+        .filter(Boolean);
 
-    if (!parts) return;
+    const jsonContent = JSON.stringify(blocks);
+
+    const base64Content = btoa(unescape(encodeURIComponent(jsonContent)));
 
     const formData = new FormData();
-    formData.append('filename', 'custom.sh');
-    formData.append('content', parts);
+    formData.append('filename', 'custom.json');
+    formData.append('content', base64Content);
 
     try {
         const csrfToken = localStorage.getItem('csrfToken');
