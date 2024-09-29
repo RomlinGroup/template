@@ -646,10 +646,12 @@ function disableInteractions() {
 }
 
 function displayAudioFile(file, container) {
+    const timestamp = new Date().getTime();
     const audioElement = document.createElement('audio');
+
     audioElement.controls = true;
     audioElement.autoplay = false;
-    audioElement.src = file.public;
+    audioElement.src = `${file.public}?cb=${timestamp}`;
 
     const audioContainer = document.createElement('div');
     audioContainer.classList.add('audio-file-output');
@@ -667,10 +669,17 @@ function enableInteractions() {
 
 async function fetchAndDisplayTextFile(file, container) {
     try {
-        const response = await fetch(file.public, {method: 'GET', credentials: 'same-origin'});
+        const timestamp = new Date().getTime();
+        const response = await fetch(`${file.public}?cb=${timestamp}`, {
+            method: 'GET',
+            credentials: 'same-origin',
+            cache: 'no-store'
+        });
+
         if (!response.ok) {
             throw new Error(`Error fetching ${file.public}: ${response.status} ${response.statusText}`);
         }
+
         const content = await response.text();
         const trimmedContent = content.trim();
 
