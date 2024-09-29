@@ -345,39 +345,78 @@ async function checkApiTokenValidity(apiToken) {
 }
 
 async function checkBuildStatus() {
-    const apiToken = localStorage.getItem('apiToken');
+    let apiToken;
+    try {
+        apiToken = localStorage.getItem('apiToken');
+    } catch (e) {
+        if (typeof stopBuildStatusCheck === 'function') {
+            stopBuildStatusCheck();
+        }
+        return;
+    }
 
     if (!apiToken) {
-        console.error('No API token found');
+        if (typeof stopBuildStatusCheck === 'function') {
+            stopBuildStatusCheck();
+        }
         return;
     }
 
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const timeoutId = setTimeout(() => {
+            try {
+                controller.abort();
+            } catch (e) {
+            }
+        }, 10000);
 
-        const data = await callAPI('build-status', apiToken, 'GET', null, controller.signal);
+        let data;
+        try {
+            data = await callAPI('build-status', apiToken, 'GET', null, controller.signal);
+        } catch (error) {
+            clearTimeout(timeoutId);
+            throw error;
+        }
+
         clearTimeout(timeoutId);
 
-        handleBuildStatus(data.status);
-        consecutiveErrors = 0;
+        if (data && data.status) {
+            if (typeof handleBuildStatus === 'function') {
+                handleBuildStatus(data.status);
+            }
+        } else {
+            if (typeof handleBuildStatus === 'function') {
+                handleBuildStatus('unknown');
+            }
+        }
 
-        if (data.status === 'completed' || data.status === 'failed') {
-            await callAPI('clear-build-status', apiToken, 'POST');
+        window.consecutiveErrors = 0;
+
+        if (data && (data.status === 'completed' || data.status === 'failed')) {
+            try {
+                await callAPI('clear-build-status', apiToken, 'POST');
+            } catch (e) {
+            }
         }
     } catch (error) {
-        if (error.name === 'AbortError') {
-            console.warn('Build status check timed out');
-        } else {
-            console.error('Error checking build status:', error);
-        }
+        window.consecutiveErrors = (window.consecutiveErrors || 0) + 1;
+        const MAX_CONSECUTIVE_ERRORS = window.MAX_CONSECUTIVE_ERRORS || 3;
 
-        consecutiveErrors++;
-
-        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-            handleBuildStatusError();
+        if (window.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS || error.name === 'TypeError') {
+            if (typeof handleBuildStatusError === 'function') {
+                handleBuildStatusError();
+            }
+            if (typeof stopBuildStatusCheck === 'function') {
+                stopBuildStatusCheck();
+            }
+            if (typeof showStatus === 'function') {
+                showStatus('Connection lost or server error. Build status check stopped.', false);
+            }
         } else {
-            handleBuildStatus('unknown');
+            if (typeof handleBuildStatus === 'function') {
+                handleBuildStatus('unknown');
+            }
         }
     }
 }
@@ -443,7 +482,6 @@ async function checkHeartbeat(apiToken) {
     }
 
     function setDisconnectedState() {
-        console.log('Connection lost. Resetting app state.');
         heartbeatTime.textContent = 'Disconnected';
         heartbeatDot.classList.remove('connected');
         heartbeatDot.classList.add('disconnected');
@@ -509,19 +547,12 @@ async function deleteComment(commentId) {
     };
 
     try {
-        console.log(`Attempting to delete comment with ID: ${numericCommentId}`);
-        console.log('Request headers:', headers);
-
         const response = await fetch(`${getBaseUrl()}/api/comments/${numericCommentId}`, {
             method: 'DELETE',
             headers: headers
         });
 
-        console.log('Response status:', response.status);
-        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
         const responseText = await response.text();
-        console.log('Raw response:', responseText);
 
         let responseData;
         try {
@@ -535,8 +566,8 @@ async function deleteComment(commentId) {
             throw new Error(`Server error: ${responseData.detail || response.statusText}`);
         }
 
-        console.log('Delete comment response:', responseData);
         showStatus(responseData.message || 'Comment deleted successfully.', true);
+
         await refreshCommentsFromBackend();
     } catch (error) {
         console.error('Error deleting comment:', error);
@@ -617,11 +648,8 @@ function disableInteractions() {
 function displayAudioFile(file, container) {
     const audioElement = document.createElement('audio');
     audioElement.controls = true;
-    audioElement.autoplay = true;
+    audioElement.autoplay = false;
     audioElement.src = file.public;
-
-    const fileNameElement = document.createElement('p');
-    fileNameElement.textContent = file.public.split('/').pop();
 
     const audioContainer = document.createElement('div');
     audioContainer.classList.add('audio-file-output');
@@ -639,28 +667,24 @@ function enableInteractions() {
 
 async function fetchAndDisplayTextFile(file, container) {
     try {
-        const response = await fetch(file.public);
-        if (response.ok) {
-            const content = await response.text();
-            const trimmedContent = content.trim();
-
-            const fileNameElement = document.createElement('p');
-            fileNameElement.textContent = file.public.split('/').pop();
-
-            const preElement = document.createElement('pre');
-            preElement.textContent = trimmedContent;
-
-            const fileContainer = document.createElement('div');
-            fileContainer.classList.add('text-file-output');
-            fileContainer.appendChild(preElement);
-
-            container.appendChild(fileContainer);
-        } else {
-            throw new Error(`Error reading ${file.public}`);
+        const response = await fetch(file.public, {method: 'GET', credentials: 'same-origin'});
+        if (!response.ok) {
+            throw new Error(`Error fetching ${file.public}: ${response.status} ${response.statusText}`);
         }
+        const content = await response.text();
+        const trimmedContent = content.trim();
+
+        const preElement = document.createElement('pre');
+        preElement.textContent = trimmedContent;
+
+        const fileContainer = document.createElement('div');
+        fileContainer.classList.add('text-file-output');
+        fileContainer.appendChild(preElement);
+
+        container.appendChild(fileContainer);
     } catch (error) {
         console.error('Error fetching text file:', error);
-        container.innerHTML += `<p>Error reading ${file.public}: ${error.message}</p>`;
+        container.innerHTML += `<p>Error reading ${escapeHTML(file.public)}: ${escapeHTML(error.message)}</p>`;
     }
 }
 
@@ -698,47 +722,95 @@ async function fetchCSRFToken() {
     return data.csrf_token;
 }
 
+function escapeHTML(str) {
+    if (typeof str !== 'string') {
+        return '';
+    }
+    return str.replace(/[&<>"'`=\/]/g, (s) => {
+        return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;',
+            '/': '&#x2F;',
+            '`': '&#x60;',
+            '=': '&#x3D;',
+        }[s];
+    });
+}
+
 async function fetchEvalData() {
     const allowedFiles = ['output.txt', 'output.wav'];
 
     try {
-        const response = await fetch('/output/eval_data.json');
-        if (response.ok) {
-            const data = await response.json();
+        const response = await fetch('/output/eval_data.json', {method: 'GET', credentials: 'same-origin'});
 
-            const outputWidget = document.getElementById('output-widget');
-            const evalWidget = document.getElementById('eval-widget');
-            outputWidget.innerHTML = '';
-            evalWidget.innerHTML = '';
-
-            let hasOutput = false;
-
-            for (const file of data) {
-                const fileName = file.public.split('/').pop();
-                if (allowedFiles.includes(fileName)) {
-                    if (file.type === 'text/plain') {
-                        await fetchAndDisplayTextFile(file, outputWidget);
-                        hasOutput = true;
-                    } else if (file.type === 'audio/x-wav') {
-                        displayAudioFile(file, outputWidget);
-                        hasOutput = true;
-                    }
-                }
-            }
-
-            if (hasOutput) {
-                outputWidget.classList.add('text-file-output');
-            } else {
-                outputWidget.classList.remove('text-file-output');
-            }
-
-            evalWidget.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
-        } else {
-            throw new Error('File not found');
+        if (!response.ok) {
+            throw new Error(`Failed to fetch eval_data.json: ${response.status} ${response.statusText}`);
         }
-    } catch (error) {
+
+        const data = await response.json();
+
+        if (!Array.isArray(data)) {
+            throw new TypeError('Invalid data format: Expected an array of files');
+        }
+
+        const outputWidget = document.getElementById('output-widget');
         const evalWidget = document.getElementById('eval-widget');
-        evalWidget.innerHTML = `<p>Could not load eval_data.json: ${error.message}</p>`;
+
+        if (!outputWidget || !evalWidget) {
+            console.error('Output or eval widget not found in the DOM.');
+            return;
+        }
+
+        outputWidget.innerHTML = '';
+        evalWidget.innerHTML = '';
+
+        let hasOutput = false;
+
+        for (const file of data) {
+            if (!file.public || !file.type) {
+                console.warn('Skipping invalid file entry:', file);
+                continue;
+            }
+
+            const fileName = file.public.split('/').pop();
+
+            if (!allowedFiles.includes(fileName)) {
+                console.warn(`File not allowed or not in the allowed list: ${fileName}`);
+                continue;
+            }
+
+            const sanitizedPublicPath = encodeURI(file.public);
+
+            if (file.type === 'text/plain') {
+                await fetchAndDisplayTextFile({...file, public: sanitizedPublicPath}, outputWidget);
+                hasOutput = true;
+            } else if (file.type === 'audio/x-wav') {
+                displayAudioFile({...file, public: sanitizedPublicPath}, outputWidget);
+                hasOutput = true;
+            } else {
+                console.warn(`Unsupported file type: ${file.type}`);
+            }
+        }
+
+        if (hasOutput) {
+            outputWidget.classList.add('text-file-output');
+        } else {
+            outputWidget.classList.remove('text-file-output');
+        }
+
+        evalWidget.innerHTML = `<pre>${escapeHTML(JSON.stringify(data, null, 2))}</pre>`;
+    } catch (error) {
+        console.error('Error in fetchEvalData:', error);
+
+        const evalWidget = document.getElementById('eval-widget');
+        if (evalWidget) {
+            evalWidget.innerHTML = `<p>Could not load eval_data.json: ${escapeHTML(error.message)}</p>`;
+        }
+
+        showStatus(`Error fetching eval data: ${error.message}`, false);
     }
 }
 
@@ -766,12 +838,10 @@ async function fetchLatestLogs(apiToken) {
             logDropdown.value = latestLog;
             logDropdown.dispatchEvent(new Event('change'));
         } else {
-            console.log('No log files found.');
             renderLogContent("No log files found.");
             showStatus('No log files found!', false);
         }
     } catch (error) {
-        console.error('Error fetching log files:', error);
         renderLogContent("Error fetching log files.");
         showStatus('Error fetching log files!', false);
     }
@@ -800,7 +870,6 @@ async function fetchSchedule() {
     const apiToken = localStorage.getItem('apiToken');
 
     if (!apiToken) {
-        console.log("No API token found, skipping schedule fetch");
         return;
     }
 
@@ -819,7 +888,6 @@ async function fetchSelectedLog() {
     const selectedLog = logDropdown.value;
 
     if (!selectedLog) {
-        console.log("No log file selected");
         renderLogContent('No log file selected.');
         return;
     }
@@ -885,7 +953,6 @@ function handleBuildStatus(status) {
         const stepIndex = BUILD_STEPS.indexOf(step);
 
         if (stepIndex > currentStepIndex) {
-            console.log(`Build in progress: ${step}`);
             showLoadingOverlay(`${step}`);
             disableInteractions();
             showAbortButton();
@@ -1012,7 +1079,6 @@ async function initializeApp(apiToken) {
 async function loadEvalAndOutputFiles(apiToken) {
     try {
         await fetchEvalData();
-        console.log('Eval data fetched successfully');
     } catch (error) {
         console.warn('Error fetching eval data:', error);
     }
@@ -1023,10 +1089,8 @@ async function loadEvalAndOutputFiles(apiToken) {
 
         if (evalData !== null) {
             evalWidget.innerHTML = `<pre>${JSON.stringify(evalData, null, 2)}</pre>`;
-            console.log('Eval data processed successfully');
         } else {
             evalWidget.innerHTML = '<p>No eval_data.json found. This may be normal if no build has been run yet.</p>';
-            console.log('No eval_data.json found.');
         }
     } catch (error) {
         console.error('Error processing eval data:', error);
@@ -1136,10 +1200,8 @@ async function postComment(blockId, selectedText, comment) {
         }
 
         const responseData = await response.json();
-        console.log('Comment added successfully:', responseData);
         return true;
     } catch (error) {
-        console.error('Error in postComment:', error);
         throw new Error(`Failed to add comment: ${error.message}`);
     }
 }
@@ -1403,7 +1465,6 @@ function renderLogContent(content) {
 }
 
 function resetAppState() {
-    console.log("Resetting app state.");
     localStorage.removeItem('apiToken');
     window.location.reload();
 }
@@ -1494,8 +1555,9 @@ async function sendScheduleToServer(scheduleData) {
         }
 
         const responseData = await response.json();
-        console.log('Schedule saved successfully:', responseData);
+
         showStatus('Schedule saved successfully!', true);
+
         await fetchSchedule();
     } catch (error) {
         console.error('Error saving schedule:', error);
@@ -1600,7 +1662,6 @@ function startBuildStatusCheck() {
 function stopBuildStatusCheck() {
     clearInterval(buildStatusInterval);
     buildStatusInterval = null;
-    console.log('Stopped build status check');
 }
 
 function stripFormatting(e) {
@@ -1641,39 +1702,59 @@ function toggleCommentSidebar() {
 
 async function validateAndInitialize(apiToken) {
     try {
-        if (!apiToken) {
-            console.error("No API token provided.");
-            alert("Please enter a valid API token.");
+        if (typeof apiToken !== 'string' || apiToken.trim() === '') {
+            console.error('No API token provided.');
+            showStatus('Please enter a valid API token.', false);
+            return false;
+        }
+
+        if (typeof callAPI !== 'function') {
+            console.error('callAPI function is not defined.');
+            showStatus('Internal error: Unable to validate API token.', false);
             return false;
         }
 
         const response = await callAPI('validate_token', apiToken, 'POST', {api_token: apiToken});
 
-        console.log("API validation response:", response);
+        if (response && response.message === 'API token is valid.') {
+            try {
+                localStorage.setItem('apiToken', apiToken);
+            } catch (storageError) {
+                console.error('Failed to store API token in localStorage:', storageError);
+                showStatus('Error storing API token. Please check your browser settings.', false);
+                return false;
+            }
 
-        if (response.message === 'API token is valid.') {
-            console.log("API token is valid. Storing in localStorage.");
-            localStorage.setItem('apiToken', apiToken);
+            if (typeof initializeApp !== 'function') {
+                console.error('initializeApp function is not defined.');
+                showStatus('Internal error: Unable to initialize the application.', false);
+                return false;
+            }
 
             await initializeApp(apiToken);
-            document.getElementById('api-key-modal').style.display = 'none';
+
+            const apiKeyModalElement = document.getElementById('api-key-modal');
+
+            if (apiKeyModalElement) {
+                apiKeyModalElement.style.display = 'none';
+            } else {
+                console.warn('API key modal element not found.');
+            }
+
             return true;
         } else {
-            console.error('API token validation failed:', response.message);
-            alert('API token validation failed. Please try again.');
+            const errorMessage = response && response.message ? response.message : 'Unknown error';
             localStorage.removeItem('apiToken');
             return false;
         }
     } catch (error) {
-        console.error('Error during API token validation:', error);
 
-        if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-            alert('Network error. Please check your connection and try again.');
-        } else if (error.message.includes('401')) {
-            console.error('Unauthorized: Invalid API token.');
-            alert('Please enter a valid API token.');
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+            showStatus('Network error. Please check your connection and try again.', false);
+        } else if (error.message && error.message.includes('401')) {
+            showStatus('Invalid API token. Please enter a valid token.', false);
         } else {
-            alert(`Failed to validate API token. ${error.message}`);
+            showStatus(`Failed to validate API token. ${error.message}`, false);
         }
 
         localStorage.removeItem('apiToken');
@@ -1752,158 +1833,237 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const debouncedInitialization = debounce((apiToken) => {
-        validateAndInitialize(apiToken);
+    const debouncedInitialization = debounce(async (apiToken) => {
+        try {
+            await validateAndInitialize(apiToken);
+        } catch (error) {
+            console.error('Error during debounced initialization:', error);
+            showStatus('Initialization error. Please try again.', false);
+        }
     }, 500);
 
-    apiKeySubmit.addEventListener('click', async () => {
-        console.log('Validating the API token')
+    if (apiKeySubmit && apiKeyInput) {
+        apiKeySubmit.addEventListener('click', async () => {
+            const apiKey = apiKeyInput.value.trim();
 
-        const apiKey = apiKeyInput.value.trim();
+            if (apiKey) {
+                try {
+                    const isValid = await validateAndInitialize(apiKey);
 
-        if (apiKey) {
-            const isValid = await validateAndInitialize(apiKey);
-
-            if (!isValid) {
-                showApiKeyModal();
+                    if (!isValid) {
+                        showApiKeyModal();
+                    }
+                } catch (error) {
+                    console.error('Error during API token validation:', error);
+                    showStatus('Failed to validate API token. Please try again.', false);
+                    showApiKeyModal();
+                }
+            } else {
+                showStatus('Please enter a valid API token.', false);
             }
-
-        } else {
-            alert('Please enter a valid API token.');
-        }
-    });
-
-    const storedApiToken = localStorage.getItem('apiToken');
-
-    if (storedApiToken) {
-        await debouncedInitialization(storedApiToken);
-        checkAndRestoreBuildStatus();
-        await loadEvalAndOutputFiles(storedApiToken);
+        });
     } else {
+        console.error('API key input or submit button not found.');
+    }
+
+    try {
+        const storedApiToken = localStorage.getItem('apiToken');
+
+        if (storedApiToken) {
+            await debouncedInitialization(storedApiToken);
+            checkAndRestoreBuildStatus();
+            await loadEvalAndOutputFiles(storedApiToken);
+        } else {
+            showApiKeyModal();
+        }
+    } catch (error) {
+        console.error('Error during initialization with stored API token:', error);
+        showStatus('Failed to initialize with stored API token. Please log in again.', false);
         showApiKeyModal();
     }
 
-    document.querySelectorAll('.editor').forEach(editor => {
-        addEventListenersToEditor(editor);
-        resizeEditor(editor);
-    });
+    const editors = document.querySelectorAll('.editor');
 
-    const savedSidebarState = localStorage.getItem('commentSidebarState');
-
-    if (savedSidebarState === 'shown') {
-        commentSidebar.style.display = 'block';
-    } else {
-        commentSidebar.style.display = 'none';
+    if (editors.length > 0) {
+        editors.forEach((editor) => {
+            addEventListenersToEditor(editor);
+            resizeEditor(editor);
+        });
     }
 
-    // BEGIN Tabs
+    if (commentSidebar) {
+        const savedSidebarState = localStorage.getItem('commentSidebarState');
+        commentSidebar.style.display = savedSidebarState === 'shown' ? 'block' : 'none';
+    } else {
+        console.warn('Comment sidebar element not found.');
+    }
+
     const boardTab = document.querySelector('.tab[data-tab="board"]');
     const editorTab = document.querySelector('.tab[data-tab="editor"]');
     const hooksTab = document.querySelector('.tab[data-tab="hooks"]');
     const logTab = document.querySelector('.tab[data-tab="log"]');
 
     const setActiveTab = (tab) => {
+        if (!tab) {
+            console.error('Tab element is undefined.');
+            return;
+        }
         const tabs = document.querySelectorAll('.tab');
         const tabContents = document.querySelectorAll('.tab-content');
-        tabs.forEach(t => t.classList.remove('active'));
-        tabContents.forEach(tc => tc.classList.remove('active'));
+        tabs.forEach((t) => t.classList.remove('active'));
+        tabContents.forEach((tc) => tc.classList.remove('active'));
 
         tab.classList.add('active');
-        document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
+        const tabContent = document.getElementById(`${tab.dataset.tab}-content`);
+        if (tabContent) {
+            tabContent.classList.add('active');
+        } else {
+            console.error(`Tab content element not found for ${tab.dataset.tab}`);
+        }
         localStorage.setItem('activeTab', tab.dataset.tab);
         resizeAllTextareas();
     };
 
-    boardTab.addEventListener('click', () => setActiveTab(boardTab));
-    editorTab.addEventListener('click', () => setActiveTab(editorTab));
-    hooksTab.addEventListener('click', () => setActiveTab(hooksTab));
-    logTab.addEventListener('click', () => setActiveTab(logTab));
+    if (boardTab) {
+        boardTab.addEventListener('click', () => setActiveTab(boardTab));
+    } else {
+        console.error('Board tab element not found.');
+    }
+    if (editorTab) {
+        editorTab.addEventListener('click', () => setActiveTab(editorTab));
+    } else {
+        console.error('Editor tab element not found.');
+    }
+    if (hooksTab) {
+        hooksTab.addEventListener('click', () => setActiveTab(hooksTab));
+    } else {
+        console.error('Hooks tab element not found.');
+    }
+    if (logTab) {
+        logTab.addEventListener('click', () => setActiveTab(logTab));
+    } else {
+        console.error('Log tab element not found.');
+    }
 
     const activeTab = localStorage.getItem('activeTab');
+    let initialTab = boardTab;
 
-    const initialTab = activeTab && document.querySelector(`.tab[data-tab="${activeTab}"]`) ?
-        document.querySelector(`.tab[data-tab="${activeTab}"]`) : boardTab;
-
+    if (activeTab) {
+        const activeTabElement = document.querySelector(`.tab[data-tab="${activeTab}"]`);
+        if (activeTabElement) {
+            initialTab = activeTabElement;
+        } else {
+            console.warn(`No tab found for activeTab: ${activeTab}, defaulting to boardTab.`);
+        }
+    }
     setActiveTab(initialTab);
-    // END Tabs
 
-    // BEGIN Widgets
-    // Schedule
     setScheduleType('manual');
 
-    scheduleTypeInputs.forEach(input => {
-        input.addEventListener('change', (e) => {
-            if (e.target.value === 'recurring') {
-                recurringSchedule.style.display = 'block';
-                manualSchedule.style.display = 'none';
+    if (scheduleTypeInputs.length > 0) {
+        scheduleTypeInputs.forEach((input) => {
+            input.addEventListener('change', (e) => {
+                if (e.target.value === 'recurring') {
+                    if (recurringSchedule && manualSchedule) {
+                        recurringSchedule.style.display = 'block';
+                        manualSchedule.style.display = 'none';
+                    } else {
+                        console.error('Schedule elements not found.');
+                    }
+                } else {
+                    if (recurringSchedule && manualSchedule) {
+                        recurringSchedule.style.display = 'none';
+                        manualSchedule.style.display = 'block';
+                    } else {
+                        console.error('Schedule elements not found.');
+                    }
+                }
+            });
+        });
+    } else {
+        console.warn('No schedule type inputs found.');
+    }
+
+    const addDatetimeBtn = document.getElementById('add-datetime');
+    if (addDatetimeBtn) {
+        addDatetimeBtn.addEventListener('click', () => {
+            const datetimeInput = document.getElementById('manual-datetime');
+            if (datetimeInput) {
+                const datetimeValue = datetimeInput.value;
+                if (datetimeValue) {
+                    addDatetimeToList(datetimeValue);
+                    datetimeInput.value = '';
+                } else {
+                    showStatus('Please select a date and time.', false);
+                }
             } else {
-                recurringSchedule.style.display = 'none';
-                manualSchedule.style.display = 'block';
+                console.error('Manual datetime input element not found.');
             }
         });
-    });
+    } else {
+        console.error('Add datetime button not found.');
+    }
 
-    document.getElementById('add-datetime').addEventListener('click', () => {
-        const datetimeInput = document.getElementById('manual-datetime');
-        const datetimeValue = datetimeInput.value;
+    if (saveScheduleBtn) {
+        saveScheduleBtn.addEventListener('click', async () => {
+            try {
+                const scheduleTypeElement = document.querySelector('input[name="schedule-type"]:checked');
+                if (!scheduleTypeElement) {
+                    showStatus('Please select a schedule type.', false);
+                    return;
+                }
 
-        if (datetimeValue) {
-            addDatetimeToList(datetimeValue);
-            datetimeInput.value = '';
-        } else {
-            showStatus("Please select a date and time.", false);
-        }
-    });
+                const scheduleType = scheduleTypeElement.value;
+                let scheduleData;
 
-    saveScheduleBtn.addEventListener('click', async () => {
-        const scheduleType = document.querySelector('input[name="schedule-type"]:checked').value;
+                if (scheduleType === 'recurring') {
+                    const cronPatternValue = cronPattern.value.trim();
 
-        let scheduleData;
+                    if (!cronPatternValue) {
+                        showStatus('Please enter a valid cron pattern.', false);
+                        return;
+                    }
 
-        if (scheduleType === 'recurring') {
-            const cronPatternValue = cronPattern.value.trim();
+                    scheduleData = {
+                        type: 'recurring',
+                        pattern: cronPatternValue,
+                        datetimes: [],
+                    };
 
-            if (!cronPatternValue) {
-                showStatus('Please enter a valid cron pattern.', false);
-                return;
+                    cronPattern.value = '';
+                } else if (scheduleType === 'manual') {
+                    const datetimes = [];
+                    datetimeList.querySelectorAll('li').forEach((li) => {
+                        datetimes.push(li.dataset.datetime);
+                    });
+
+                    if (datetimes.length === 0) {
+                        showStatus('Please add at least one date-time for the manual schedule.', false);
+                        return;
+                    }
+
+                    scheduleData = {
+                        type: 'manual',
+                        pattern: null,
+                        datetimes: datetimes,
+                    };
+                }
+
+                await sendScheduleToServer(scheduleData);
+
+                datetimeList.style.display = 'none';
+                datetimeList.innerHTML = '';
+            } catch (error) {
+                console.error('Error saving schedule:', error);
+                showStatus('Error saving schedule. Please try again.', false);
             }
-
-            scheduleData = {
-                type: 'recurring',
-                pattern: cronPatternValue,
-                datetimes: []
-            };
-
-            cronPattern.value = '';
-        } else if (scheduleType === 'manual') {
-            const datetimes = [];
-
-            datetimeList.querySelectorAll('li').forEach(li => {
-                datetimes.push(li.dataset.datetime);
-            });
-
-            if (datetimes.length === 0) {
-                showStatus('Please add at least one date-time for the manual schedule.', false);
-                return;
-            }
-
-            scheduleData = {
-                type: 'manual',
-                pattern: null,
-                datetimes: datetimes
-            };
-        }
-
-        await sendScheduleToServer(scheduleData);
-
-        datetimeList.style.display = 'none';
-        datetimeList.innerHTML = '';
-    });
+        });
+    } else {
+        console.error('Save schedule button not found.');
+    }
 
     checkDatetimeListEmpty();
-    fetchSchedule();
+    await fetchSchedule();
 
-    // eval_data.json
     checkAndFetchEvalData();
-    // END Widgets
 });
