@@ -321,6 +321,7 @@ async function callAPI(endpoint, apiToken, method = "POST", data = null) {
 
 function checkAndFetchEvalData() {
     const evalDataFetched = localStorage.getItem('evalDataFetched');
+
     if (evalDataFetched === 'true') {
         fetchEvalData();
     }
