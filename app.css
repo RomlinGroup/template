@@ -1,3 +1,10 @@
+@font-face {
+    font-family: 'teletext';
+    src: url('teletext.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
 /* Reset and global styles */
 * {
     -moz-osx-font-smoothing: grayscale;
@@ -63,7 +70,11 @@ textarea {
 }
 
 .audio-file-output {
-    margin-top: 20px;
+    margin-top: 40px;
+}
+
+.audio-file-output audio {
+    width: 100%;
 }
 
 .color-label {
@@ -239,6 +250,18 @@ textarea {
 .form-group textarea {
     font-size: 12px;
     resize: vertical;
+}
+
+.fullscreen-toggle-btn {
+    background: none;
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    color: white;
+    border: none;
+    padding: 20px;
+    cursor: pointer;
+    z-index: 1001;
 }
 
 .handle,
@@ -619,7 +642,7 @@ textarea {
 #comment-sidebar {
     display: none;
     position: fixed;
-    z-index: 2147483646;
+    z-index: 2147483645;
     right: 0;
     top: 64px;
     width: 300px;
@@ -776,14 +799,40 @@ textarea {
 }
 
 #output-widget {
-    background: #f0f2ff;
+    color: #fff;
+    background: #5865f2;
+    position: relative;
+    padding: 40px;
+}
+
+#output-widget pre {
+    font-family: 'teletext';
+    font-stretch: condensed;
+    letter-spacing: -0.05em;
+}
+
+#output-widget.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: white;
+    z-index: 2147483646;
+    margin-top: 0px;
+    overflow: auto;
+}
+
+#output-widget.fullscreen pre {
+    font-size: 24px;
+    line-height: 1.5em;
 }
 
 #output-widget.text-file-output {
     border: 0px;
     color: #fff;
-    background: #060c4d;
-    font-size: 14px;
+    background: #5865f2;
+    font-size: 16px;
 }
 
 #save-button {
@@ -854,7 +903,7 @@ textarea {
     height: 64px;
     top: 0px;
     position: fixed;
-    z-index: 2147483646;
+    z-index: 2147483645;
     align-items: center;
     background: #060c4d;
     color: #fff;

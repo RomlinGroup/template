@@ -58,6 +58,14 @@ const editorTrashIcon = `
   <path d="M6 2h4" stroke="#5865f2" stroke-width="1" fill="none"/>
 </svg>`;
 
+const fullscreenIcon = `
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <rect x="1" y="1" width="5" height="5" fill="#ffffff" />
+  <rect x="10" y="1" width="5" height="5" fill="#ffffff" />
+  <rect x="1" y="10" width="5" height="5" fill="#ffffff" />
+  <rect x="10" y="10" width="5" height="5" fill="#ffffff" />
+</svg>`;
+
 const hooksTrashIcon = `
 <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
   <path d="M4 4h8 M5 4v8h6V4 M8 6v4" stroke="#060c4d" stroke-width="1" fill="none"/>
@@ -655,7 +663,7 @@ function displayAudioFile(file, container) {
     audioElement.src = `${file.public}?cb=${timestamp}`;
 
     const audioContainer = document.createElement('div');
-    audioContainer.classList.add('audio-file-output');
+    audioContainer.classList.add('audio-file-output', 'audio-player');
     audioContainer.appendChild(audioElement);
 
     container.appendChild(audioContainer);
@@ -811,6 +819,17 @@ async function fetchEvalData() {
             outputWidget.classList.remove('text-file-output');
         }
 
+        const fullscreenButton = document.createElement('button');
+
+        fullscreenButton.classList.add('fullscreen-toggle-btn');
+        fullscreenButton.innerHTML = fullscreenIcon;
+
+        fullscreenButton.addEventListener('click', () => {
+            outputWidget.classList.toggle('fullscreen');
+        });
+
+        outputWidget.appendChild(fullscreenButton);
+
         evalWidget.innerHTML = `<pre>${escapeHTML(JSON.stringify(data, null, 2))}</pre>`;
     } catch (error) {
         console.error('Error in fetchEvalData:', error);
@@ -823,6 +842,7 @@ async function fetchEvalData() {
         showStatus(`Error fetching eval data: ${error.message}`, false);
     }
 }
+
 
 async function fetchHooks(apiToken) {
     try {
