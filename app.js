@@ -836,21 +836,23 @@ async function fetchEvalData() {
             }
         }
 
-        if (hasOutput) {
-            outputWidget.classList.add('text-file-output');
+        if (!hasOutput) {
+            outputWidget.innerHTML = '<p>No output available.</p>';
+            evalWidget.innerHTML = '<p>No eval_data.json available</p>';
         } else {
-            outputWidget.classList.remove('text-file-output');
+            outputWidget.classList.add('text-file-output');
+
+            const fullscreenButton = document.createElement('button');
+            fullscreenButton.classList.add('fullscreen-toggle-btn');
+            fullscreenButton.innerHTML = fullscreenIcon;
+
+            fullscreenButton.addEventListener('click', () => {
+                outputWidget.classList.toggle('fullscreen');
+            });
+
+            outputWidget.appendChild(fullscreenButton);
         }
 
-        const fullscreenButton = document.createElement('button');
-        fullscreenButton.classList.add('fullscreen-toggle-btn');
-        fullscreenButton.innerHTML = fullscreenIcon;
-
-        fullscreenButton.addEventListener('click', () => {
-            outputWidget.classList.toggle('fullscreen');
-        });
-
-        outputWidget.appendChild(fullscreenButton);
         evalWidget.innerHTML = `<pre>${escapeHTML(JSON.stringify(data, null, 2))}</pre>`;
     } catch (error) {
         console.error('Error in fetchEvalData:', error);
