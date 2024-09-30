@@ -70,11 +70,16 @@ textarea {
 }
 
 .audio-file-output {
-    margin-top: 40px;
+    display: none;
 }
 
-.audio-file-output audio {
-    width: 100%;
+.audio-file-output audio::-webkit-media-controls-play-button,
+.audio-file-output audio::-webkit-media-controls-pause-button {
+    border-radius: 0;
+}
+
+.audio-file-output audio::-moz-media-controls {
+    border-radius: 0;
 }
 
 .color-label {
@@ -255,13 +260,11 @@ textarea {
 .fullscreen-toggle-btn {
     background: none;
     position: absolute;
-    top: 0px;
-    right: 0px;
+    top: 20px;
+    right: 20px;
     color: white;
     border: none;
-    padding: 20px;
     cursor: pointer;
-    z-index: 1001;
 }
 
 .handle,
@@ -491,6 +494,15 @@ textarea {
     margin-top: 64px;
     max-width: 800px;
     width: 100%;
+}
+
+.teletext-timestamp {
+    font-family: 'teletext';
+    margin-bottom: 20px;
+}
+
+.teletext-style {
+    font-family: 'teletext';
 }
 
 .toggle-button {
@@ -802,13 +814,6 @@ textarea {
     color: #fff;
     background: #5865f2;
     position: relative;
-    padding: 40px;
-}
-
-#output-widget pre {
-    font-family: 'teletext';
-    font-stretch: condensed;
-    letter-spacing: -0.05em;
 }
 
 #output-widget.fullscreen {
@@ -823,16 +828,11 @@ textarea {
     overflow: auto;
 }
 
-#output-widget.fullscreen pre {
-    font-size: 24px;
-    line-height: 1.5em;
-}
-
 #output-widget.text-file-output {
     border: 0px;
     color: #fff;
     background: #5865f2;
-    font-size: 16px;
+    font-size: 24px;
 }
 
 #save-button {
@@ -948,6 +948,15 @@ textarea {
 }
 
 /* Keyframes */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
 @keyframes float {
     0% {
         transform: translateY(0);

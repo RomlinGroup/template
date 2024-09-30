@@ -59,11 +59,11 @@ const editorTrashIcon = `
 </svg>`;
 
 const fullscreenIcon = `
-<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-  <rect x="1" y="1" width="5" height="5" fill="#ffffff" />
-  <rect x="10" y="1" width="5" height="5" fill="#ffffff" />
-  <rect x="1" y="10" width="5" height="5" fill="#ffffff" />
-  <rect x="10" y="10" width="5" height="5" fill="#ffffff" />
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 5.33V2.67H9.33v2.67H12z" fill="#ffffff"/>
+    <path d="M20 5.33h2.67V2.67H20v2.66z" fill="#ffffff"/>
+    <path d="M2.67 26.67h26.67V8h-9.33V5.33h-2.67V8h-2.67V5.33H12v2.67H2.67v18.67z" fill="#ffffff"/>
+    <rect x="5.33" y="10.67" width="21.33" height="13.33" fill="#5865f2"/>
 </svg>`;
 
 const hooksTrashIcon = `
@@ -91,6 +91,7 @@ let disconnectedCount = 0;
 let highlightTimeout;
 let initializationTimeout;
 let isBuilding = false;
+let isFetchingEvalData = false;
 let lastStatus = '';
 let lastStep = '';
 let manualDatetimes = [];
@@ -98,6 +99,10 @@ let originalContent = '';
 
 async function abortBuild(apiToken) {
     try {
+        if (!apiToken) {
+            apiToken = localStorage.getItem('apiToken');
+        }
+
         const response = await callAPI('abort-build', apiToken, 'POST');
         if (response.message === "Build process aborted successfully.") {
             showStatus('Build process aborted.', false);
@@ -324,14 +329,6 @@ async function callAPI(endpoint, apiToken, method = "POST", data = null) {
             }
         }
         throw error;
-    }
-}
-
-function checkAndFetchEvalData() {
-    const evalDataFetched = localStorage.getItem('evalDataFetched');
-
-    if (evalDataFetched === 'true') {
-        fetchEvalData();
     }
 }
 
@@ -659,7 +656,7 @@ function displayAudioFile(file, container) {
     const audioElement = document.createElement('audio');
 
     audioElement.controls = true;
-    audioElement.autoplay = false;
+    audioElement.autoplay = true;
     audioElement.src = `${file.public}?cb=${timestamp}`;
 
     const audioContainer = document.createElement('div');
@@ -689,17 +686,43 @@ async function fetchAndDisplayTextFile(file, container) {
             throw new Error(`Error fetching ${file.public}: ${response.status} ${response.statusText}`);
         }
 
+        const lastModified = response.headers.get('Last-Modified');
+        let formattedTimestamp = "Unknown";
+
+        if (lastModified) {
+            const modifiedDate = new Date(lastModified);
+            formattedTimestamp = modifiedDate.toLocaleString();
+        }
+
         const content = await response.text();
         const trimmedContent = content.trim();
 
+        const timestampElement = document.createElement('div');
+        timestampElement.classList.add('teletext-timestamp');
+        timestampElement.textContent = formattedTimestamp;
+
         const preElement = document.createElement('pre');
         preElement.textContent = trimmedContent;
+        preElement.classList.add('teletext-style');
 
-        const fileContainer = document.createElement('div');
-        fileContainer.classList.add('text-file-output');
-        fileContainer.appendChild(preElement);
+        const existingContent = Array.from(container.getElementsByClassName('text-file-output'));
+        let contentAlreadyExists = false;
 
-        container.appendChild(fileContainer);
+        existingContent.forEach((element) => {
+            if (element.querySelector('pre').textContent === trimmedContent) {
+                contentAlreadyExists = true;
+            }
+        });
+
+        if (!contentAlreadyExists) {
+            const fileContainer = document.createElement('div');
+            fileContainer.classList.add('text-file-output-wrapper');
+
+            fileContainer.appendChild(timestampElement);
+            fileContainer.appendChild(preElement);
+
+            container.appendChild(fileContainer);
+        }
     } catch (error) {
         console.error('Error fetching text file:', error);
         container.innerHTML += `<p>Error reading ${escapeHTML(file.public)}: ${escapeHTML(error.message)}</p>`;
@@ -759,17 +782,18 @@ function escapeHTML(str) {
 }
 
 async function fetchEvalData() {
+    if (isFetchingEvalData) return;
+    isFetchingEvalData = true;
+
     const allowedFiles = ['output.txt', 'output.wav'];
 
     try {
         const response = await fetch('/output/eval_data.json', {method: 'GET', credentials: 'same-origin'});
-
         if (!response.ok) {
             throw new Error(`Failed to fetch eval_data.json: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
-
         if (!Array.isArray(data)) {
             throw new TypeError('Invalid data format: Expected an array of files');
         }
@@ -794,7 +818,6 @@ async function fetchEvalData() {
             }
 
             const fileName = file.public.split('/').pop();
-
             if (!allowedFiles.includes(fileName)) {
                 console.warn(`File not allowed or not in the allowed list: ${fileName}`);
                 continue;
@@ -820,7 +843,6 @@ async function fetchEvalData() {
         }
 
         const fullscreenButton = document.createElement('button');
-
         fullscreenButton.classList.add('fullscreen-toggle-btn');
         fullscreenButton.innerHTML = fullscreenIcon;
 
@@ -829,20 +851,18 @@ async function fetchEvalData() {
         });
 
         outputWidget.appendChild(fullscreenButton);
-
         evalWidget.innerHTML = `<pre>${escapeHTML(JSON.stringify(data, null, 2))}</pre>`;
     } catch (error) {
         console.error('Error in fetchEvalData:', error);
-
         const evalWidget = document.getElementById('eval-widget');
         if (evalWidget) {
             evalWidget.innerHTML = `<p>Could not load eval_data.json: ${escapeHTML(error.message)}</p>`;
         }
-
         showStatus(`Error fetching eval data: ${error.message}`, false);
+    } finally {
+        isFetchingEvalData = false;
     }
 }
-
 
 async function fetchHooks(apiToken) {
     try {
@@ -1853,16 +1873,15 @@ document.getElementById('hook-form').addEventListener('submit', async function (
 
 window.addEventListener('resize', resizeAllTextareas);
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async () => {
     const abortButton = document.getElementById('abort-build-button');
+
     if (abortButton) {
         abortButton.addEventListener('click', function () {
             abortBuild();
         });
     }
-});
 
-document.addEventListener('DOMContentLoaded', async () => {
     const debouncedInitialization = debounce(async (apiToken) => {
         try {
             await validateAndInitialize(apiToken);
@@ -1902,7 +1921,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (storedApiToken) {
             await debouncedInitialization(storedApiToken);
             checkAndRestoreBuildStatus();
-            await loadEvalAndOutputFiles(storedApiToken);
         } else {
             showApiKeyModal();
         }
@@ -2094,6 +2112,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     checkDatetimeListEmpty();
     await fetchSchedule();
-
-    checkAndFetchEvalData();
 });
