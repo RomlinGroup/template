@@ -1066,6 +1066,15 @@ async function handleCSRFError() {
     }
 }
 
+function handleHookConflict(existingHook, newHook) {
+    const confirmUpdate = confirm(`A hook with the name "${newHook.hook_name}" already exists. Do you want to update it?`);
+    if (confirmUpdate) {
+        updateExistingHook(existingHook.id, newHook);
+    } else {
+        showStatus('Hook not added. Please choose a different name.', false);
+    }
+}
+
 function hideLoadingOverlay() {
     const loadingOverlay = document.getElementById('loading-overlay');
     loadingOverlay.style.display = 'none';
@@ -1769,6 +1778,34 @@ function toggleCommentSidebar() {
     }
 }
 
+async function updateExistingHook(hookId, newHook) {
+    const apiToken = localStorage.getItem('apiToken');
+    const csrfToken = localStorage.getItem('csrfToken');
+
+    try {
+        const response = await fetch(`${getBaseUrl()}/api/hooks/${hookId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiToken}`,
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify(newHook)
+        });
+
+        if (response.ok) {
+            await fetchHooks(apiToken);
+            showStatus('Hook updated successfully!', true);
+        } else {
+            const data = await response.json();
+            showStatus(`Error updating hook: ${data.detail}`, false);
+        }
+    } catch (error) {
+        console.error('Error updating hook:', error);
+        showStatus(`Error: ${error.message}`, false);
+    }
+}
+
 async function validateAndInitialize(apiToken) {
     try {
         if (typeof apiToken !== 'string' || apiToken.trim() === '') {
@@ -1877,8 +1914,15 @@ document.getElementById('hook-form').addEventListener('submit', async function (
 
             if (response.ok) {
                 const data = await response.json();
-                await fetchHooks(apiToken);
-                showStatus('Hook added successfully!', true);
+                if (data.existing_hook) {
+                    handleHookConflict(data.existing_hook, data.new_hook);
+                } else {
+                    await fetchHooks(apiToken);
+                    showStatus('Hook added successfully!', true);
+                }
+            } else if (response.status === 409) {
+                const data = await response.json();
+                handleHookConflict(data.existing_hook, data.new_hook);
             } else {
                 const data = await response.json();
                 showStatus(`Error: ${data.detail}`, false);
