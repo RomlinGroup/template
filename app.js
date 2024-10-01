@@ -109,6 +109,7 @@ async function abortBuild(apiToken) {
             stopBuildStatusCheck();
             hideLoadingOverlay();
             enableInteractions();
+            exitFullscreen();
         } else {
             showStatus('Failed to abort build process.', false);
         }
@@ -673,6 +674,13 @@ function enableInteractions() {
     });
 }
 
+function exitFullscreen() {
+    const outputWidget = document.getElementById('output-widget');
+    if (outputWidget && outputWidget.classList.contains('fullscreen')) {
+        outputWidget.classList.remove('fullscreen');
+    }
+}
+
 async function fetchAndDisplayTextFile(file, container) {
     try {
         const timestamp = new Date().getTime();
@@ -1023,6 +1031,7 @@ function handleBuildStatus(status) {
                 fetchLatestLogs(localStorage.getItem('apiToken'));
                 fetchSchedule();
                 localStorage.removeItem('buildStatus');
+                exitFullscreen();
                 break;
             case 'no_builds':
                 hideLoadingOverlay();
@@ -1066,6 +1075,8 @@ function hideLoadingOverlay() {
         abortButton.style.display = 'none';
         abortButton.disabled = true;
     }
+
+    exitFullscreen();
 }
 
 function highlightBlock(blockId) {
@@ -1497,6 +1508,10 @@ function renderHooks(hooks) {
         hookNameElement.className = 'hook-name';
         hookNameElement.innerHTML = `@${hook.hook_name || 'undefined'}`;
 
+        const hookPlacementElement = document.createElement('div');
+        hookPlacementElement.className = 'hook-placement';
+        hookPlacementElement.textContent = '-> ' + hook.hook_placement || 'undefined';
+
         const hookScriptElement = document.createElement('pre');
         hookScriptElement.className = 'hook-script';
         hookScriptElement.textContent = hook.hook_script || 'undefined';
@@ -1504,10 +1519,12 @@ function renderHooks(hooks) {
         listItem.appendChild(hookLabelElement);
         listItem.appendChild(hookTypeContainer);
         listItem.appendChild(hookNameElement);
+        listItem.appendChild(hookPlacementElement);
         listItem.appendChild(hookScriptElement);
 
         list.appendChild(listItem);
     });
+
     hooksContainer.appendChild(list);
 }
 
@@ -1838,6 +1855,7 @@ document.getElementById('hook-form').addEventListener('submit', async function (
     const csrfToken = localStorage.getItem('csrfToken');
     const hookName = document.getElementById('hook-name').value.trim();
     const hookType = document.getElementById('hook-type').value;
+    const hookPlacement = document.getElementById('hook-placement').value.trim();
     const hookScript = document.getElementById('hook-script').value.trim();
 
     if (hookName && hookType && hookScript) {
@@ -1852,6 +1870,7 @@ document.getElementById('hook-form').addEventListener('submit', async function (
                 body: JSON.stringify({
                     hook_name: hookName,
                     hook_type: hookType,
+                    hook_placement: hookPlacement,
                     hook_script: hookScript
                 })
             });

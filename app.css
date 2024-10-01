@@ -312,6 +312,13 @@ textarea {
     line-height: 1.5em;
 }
 
+.hook-placement {
+    color: #fff;
+    font-family: monospace;
+    font-size: 12px;
+    line-height: 1.5em;
+}
+
 .hook-script {
     color: #fff;
     font-family: monospace;
@@ -850,7 +857,7 @@ textarea {
     border: 0px;
     color: #fff;
     background: #5865f2;
-    font-size: 24px;
+    font-size: 14px;
 }
 
 #save-button {
