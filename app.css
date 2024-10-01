@@ -70,7 +70,11 @@ textarea {
 }
 
 .audio-file-output {
-    display: none;
+    margin-top: 20px;
+}
+
+.audio-file-output audio {
+    width: 100%;
 }
 
 .audio-file-output audio::-webkit-media-controls-play-button,
@@ -814,6 +818,8 @@ textarea {
     color: #fff;
     background: #5865f2;
     position: relative;
+    max-height: 300px;
+    overflow: scroll;
 }
 
 #output-widget.fullscreen {
@@ -821,11 +827,22 @@ textarea {
     top: 0;
     left: 0;
     width: 100vw;
-    height: 100vh;
+    max-height: 100vh;
     background-color: white;
     z-index: 2147483646;
     margin-top: 0px;
     overflow: auto;
+}
+
+#output-widget.fullscreen .audio-file-output {
+    max-width: 718px;
+    margin: 0 auto;
+    margin-top: 20px;
+}
+
+#output-widget.fullscreen .text-file-output-wrapper {
+    max-width: 718px;
+    margin: 0 auto;
 }
 
 #output-widget.text-file-output {
@@ -948,15 +965,6 @@ textarea {
 }
 
 /* Keyframes */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
 @keyframes float {
     0% {
         transform: translateY(0);
