@@ -656,7 +656,7 @@ function displayAudioFile(file, container) {
     const audioElement = document.createElement('audio');
 
     audioElement.controls = true;
-    audioElement.autoplay = true;
+    audioElement.autoplay = false;
     audioElement.src = `${file.public}?cb=${timestamp}`;
 
     const audioContainer = document.createElement('div');
