@@ -101,7 +101,7 @@ textarea {
     cursor: pointer;
     position: absolute;
     bottom: 0px;
-    right: 0px;
+    right: -20px;
     z-index: 1;
     width: 28px;
     height: 28px;
@@ -374,6 +374,7 @@ textarea {
 .part-bash .color-label,
 .part-python .color-label {
     background-color: #5865f2;
+    z-index: 1;
 }
 
 .part-bash .eval-label,
@@ -386,7 +387,7 @@ textarea {
     border-bottom: 1px solid #5865f2;
     display: flex;
     position: absolute;
-    z-index: 1;
+    z-index: 2;
     right: 0;
     top: 0;
 }
@@ -400,10 +401,8 @@ textarea {
     height: auto;
     font-size: 12px;
     line-height: 1.5em;
-    min-height: 50px;
+    min-height: 100px;
     overflow: hidden;
-    padding: 20px;
-    padding-top: 25px;
     white-space: pre-wrap;
     width: 100%;
     word-wrap: break-word;
@@ -418,6 +417,7 @@ textarea {
     display: flex;
     flex-direction: column;
     margin: 20px 0;
+    padding-right: 20px;
     overflow-wrap: break-word;
     position: relative;
     white-space: pre-wrap;

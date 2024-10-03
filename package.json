@@ -1,0 +1,11 @@
+{
+  "name": "template",
+  "version": "0.1",
+  "description": "Default template for Flatpack",
+  "main": "index.html",
+  "dependencies": {
+    "monaco-editor": "0.52.0"
+  },
+  "author": "Romlin Group AB",
+  "license": "Apache-2.0"
+}
