@@ -1,6 +1,6 @@
 {
   "name": "template",
-  "version": "0.1",
+  "version": "0.0.1",
   "description": "Default template for Flatpack",
   "main": "index.html",
   "dependencies": {
