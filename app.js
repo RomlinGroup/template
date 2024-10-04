@@ -671,8 +671,8 @@ function enableInteractions() {
 }
 
 function ensureMonaco(callback) {
-    if (typeof monaco === 'undefined') {
-        console.log('Monaco not loaded yet, waiting...');
+    if (typeof require === 'undefined' || typeof monaco === 'undefined' || !monaco.editor) {
+        console.log('Monaco or Require.js not loaded yet, waiting...');
         setTimeout(() => ensureMonaco(callback), 100);
         return;
     }
