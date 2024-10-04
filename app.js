@@ -1176,7 +1176,7 @@ function initializeMonacoEditorForExistingBlocks() {
                 monaco.editor.create(editorContainer, {
                     accessibilitySupport: 'off',
                     autoIndent: 'advanced',
-                    automaticLayout: false,
+                    automaticLayout: true,
                     bracketPairColorization: {
                         enabled: true
                     },
