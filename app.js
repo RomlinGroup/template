@@ -141,7 +141,6 @@ function addBlock(type) {
     const editorContainer = document.createElement('div');
     editorContainer.id = `editor-${uniqueId}`;
     editorContainer.style.width = '100%';
-    editorContainer.style.border = '1px solid #f00';
     editorWrapper.appendChild(editorContainer);
 
     const commentButton = document.createElement('button');
@@ -168,6 +167,34 @@ function addBlock(type) {
     require.config({paths: {'vs': 'node_modules/monaco-editor/min/vs'}});
 
     require(['vs/editor/editor.main'], function () {
+        monaco.editor.defineTheme('flatpack', {
+            base: 'vs-dark',
+            colors: {
+                'editor.background': '#060c4d',
+                'editor.lineHighlightBackground': '#080f61'
+            },
+            inherit: true,
+            rules: [
+                {token: '', background: '060c4d', foreground: 'ffffff'},
+                {token: 'comment', foreground: 'cccccc', fontStyle: 'italic'},
+                {token: 'keyword', foreground: '31efb8'}
+            ]
+        });
+
+        let initialValue;
+        let language;
+
+        if (type === 'python') {
+            initialValue = "# This is a Python block. Start coding here...\n\n";
+            language = 'python';
+        } else if (type === 'bash') {
+            initialValue = "# This is a Bash block. Start coding here...\n\n";
+            language = 'shell';
+        } else {
+            initialValue = `// This is a ${type} block. Start coding here...\n\n`;
+            language = 'plaintext';
+        }
+
         monaco.editor.create(document.getElementById(`editor-${uniqueId}`), {
             accessibilitySupport: 'off',
             autoIndent: 'advanced',
@@ -176,7 +203,7 @@ function addBlock(type) {
                 enabled: true
             },
             hideCursorInOverviewRuler: true,
-            language: type === 'python' ? 'python' : 'bash',
+            language: language,
             minimap: {
                 enabled: false
             },
@@ -197,13 +224,15 @@ function addBlock(type) {
             stickyScroll: {
                 enabled: false
             },
-            theme: 'hc-black',
+            theme: 'flatpack',
             unusualLineTerminators: 'auto',
-            value: '// Enter your ' + type + ' code here...',
+            value: initialValue,
             wordWrap: 'on',
             wrappingIndent: 'same',
             wrappingStrategy: 'advanced'
         });
+
+        editorContainer.style.minHeight = '100px';
     });
 }
 
