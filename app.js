@@ -168,13 +168,55 @@ function addBlock(type) {
     require.config({paths: {'vs': 'node_modules/monaco-editor/min/vs'}});
 
     require(['vs/editor/editor.main'], function () {
+        monaco.editor.defineTheme('flatpack', {
+            base: 'vs-dark',
+            colors: {
+                'editor.background': '#060c4d',
+                'editor.lineHighlightBackground': '#080f61'
+            },
+            inherit: true,
+            rules: [
+                {token: '', background: '060c4d', foreground: 'ffffff'},
+                {token: 'comment', foreground: 'cccccc', fontStyle: 'italic'},
+                {token: 'keyword', foreground: '31efb8'}
+            ]
+        });
+
         monaco.editor.create(document.getElementById(`editor-${uniqueId}`), {
-            value: '// Enter your ' + type + ' code here...',
+            accessibilitySupport: 'off',
+            autoIndent: 'advanced',
+            automaticLayout: true,
+            bracketPairColorization: {
+                enabled: true
+            },
+            hideCursorInOverviewRuler: true,
             language: type === 'python' ? 'python' : 'bash',
-            theme: 'hc-black',
+            minimap: {
+                enabled: false
+            },
+            overviewRulerBorder: false,
+            overviewRulerLanes: 0,
+            padding: {
+                top: 25,
+                bottom: 20
+            },
+            scrollBeyondLastColumn: 0,
+            scrollBeyondLastLine: false,
+            scrollbar: {
+                horizontal: 'hidden',
+                vertical: 'hidden'
+            },
+            showUnused: true,
+            smoothScrolling: true,
+            stickyScroll: {
+                enabled: false
+            },
+            theme: 'flatpack',
+            unusualLineTerminators: 'auto',
+            value: '// Enter your ' + type + ' code here...',
             wordWrap: 'on',
-            minimap: {enabled: false},
-            scrollBeyondLastLine: false
+            wrappingIndent: 'same',
+            wrappingStrategy: 'advanced'
         });
 
         let ignoreEvent = false;
