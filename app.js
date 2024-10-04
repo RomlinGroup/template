@@ -218,23 +218,6 @@ function addBlock(type) {
             wrappingIndent: 'same',
             wrappingStrategy: 'advanced'
         });
-
-        let ignoreEvent = false;
-
-        const updateHeight = () => {
-            const contentHeight = Math.min(1000, editor.getContentHeight());
-            editorContainer.style.height = `${contentHeight}px`;
-
-            try {
-                ignoreEvent = true;
-                editor.layout({height: contentHeight});
-            } finally {
-                ignoreEvent = false;
-            }
-        };
-
-        editor.onDidContentSizeChange(updateHeight);
-        updateHeight();
     });
 }
 
