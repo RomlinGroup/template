@@ -168,20 +168,6 @@ function addBlock(type) {
     require.config({paths: {'vs': 'node_modules/monaco-editor/min/vs'}});
 
     require(['vs/editor/editor.main'], function () {
-        monaco.editor.defineTheme('flatpack', {
-            base: 'vs-dark',
-            colors: {
-                'editor.background': '#060c4d',
-                'editor.lineHighlightBackground': '#080f61'
-            },
-            inherit: true,
-            rules: [
-                {token: '', background: '060c4d', foreground: 'ffffff'},
-                {token: 'comment', foreground: 'cccccc', fontStyle: 'italic'},
-                {token: 'keyword', foreground: '31efb8'}
-            ]
-        });
-
         monaco.editor.create(document.getElementById(`editor-${uniqueId}`), {
             accessibilitySupport: 'off',
             autoIndent: 'advanced',
@@ -211,7 +197,7 @@ function addBlock(type) {
             stickyScroll: {
                 enabled: false
             },
-            theme: 'flatpack',
+            theme: 'hc-black',
             unusualLineTerminators: 'auto',
             value: '// Enter your ' + type + ' code here...',
             wordWrap: 'on',
