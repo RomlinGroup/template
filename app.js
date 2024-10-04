@@ -162,87 +162,7 @@ function addBlock(type) {
     block.appendChild(controls);
     document.getElementById('file-content').appendChild(block);
 
-    function ensureMonaco(callback) {
-        if (typeof require === 'undefined') {
-            console.log('Require.js not loaded yet, waiting...');
-            setTimeout(() => ensureMonaco(callback), 100);
-            return;
-        }
-        callback();
-    }
-
-    ensureMonaco(() => {
-        require.config({paths: {'vs': 'node_modules/monaco-editor/min/vs'}});
-
-        require(['vs/editor/editor.main'], function () {
-            monaco.editor.defineTheme('flatpack', {
-                base: 'vs-dark',
-                colors: {
-                    'editor.background': '#060c4d',
-                    'editor.lineHighlightBackground': '#080f61'
-                },
-                inherit: true,
-                rules: [
-                    {token: '', background: '060c4d', foreground: 'ffffff'},
-                    {token: 'comment', foreground: 'cccccc', fontStyle: 'italic'},
-                    {token: 'keyword', foreground: '31efb8'}
-                ]
-            });
-
-            const editor = monaco.editor.create(document.getElementById(`editor-${uniqueId}`), {
-                value: '// Enter your ' + type + ' code here...',
-                language: type === 'python' ? 'python' : 'bash',
-                theme: 'flatpack',
-                wordWrap: 'on',
-                minimap: {enabled: false},
-                scrollBeyondLastLine: false,
-                accessibilitySupport: 'off',
-                autoIndent: 'advanced',
-                automaticLayout: false,
-                bracketPairColorization: {
-                    enabled: true
-                },
-                hideCursorInOverviewRuler: true,
-                overviewRulerBorder: false,
-                overviewRulerLanes: 0,
-                padding: {
-                    top: 25,
-                    bottom: 20
-                },
-                scrollBeyondLastColumn: 0,
-                scrollbar: {
-                    horizontal: 'hidden',
-                    vertical: 'hidden'
-                },
-                showUnused: true,
-                smoothScrolling: true,
-                stickyScroll: {
-                    enabled: false
-                },
-                unusualLineTerminators: 'auto',
-                wrappingIndent: 'same',
-                wrappingStrategy: 'advanced'
-            });
-
-            let ignoreEvent = false;
-
-            const updateHeight = () => {
-                const contentHeight = Math.min(1000, editor.getContentHeight());
-                editorContainer.style.height = `${contentHeight}px`;
-                try {
-                    ignoreEvent = true;
-                    editor.layout({height: contentHeight});
-                } finally {
-                    ignoreEvent = false;
-                }
-            };
-
-            editor.onDidContentSizeChange(updateHeight);
-            updateHeight();
-
-            console.log(`Editor created for ${type} block ${uniqueId}`);
-        });
-    });
+    initializeMonacoEditor(editorContainer, type);
 }
 
 async function addCommentToBlock(block) {
@@ -1199,89 +1119,83 @@ function highlightBlock(blockId) {
     }
 }
 
-function initializeMonacoEditorForExistingBlocks() {
-    function ensureMonaco(callback) {
-        if (typeof require === 'undefined') {
-            console.log('Require.js not loaded yet, waiting...');
-            setTimeout(() => ensureMonaco(callback), 100);
-            return;
-        }
-        callback();
-    }
-
+function initializeMonacoEditor(editorContainer, language, initialValue = '') {
     ensureMonaco(() => {
-        console.log('Require.js is ready. Initializing editors...');
-        const blocks = document.querySelectorAll('.part-python, .part-bash');
+        require.config({paths: {'vs': 'node_modules/monaco-editor/min/vs'}});
+        require(['vs/editor/editor.main'], function () {
+            monaco.editor.defineTheme('flatpack', {
+                base: 'vs-dark',
+                colors: {
+                    'editor.background': '#060c4d',
+                    'editor.lineHighlightBackground': '#080f61'
+                },
+                inherit: true,
+                rules: [
+                    {token: '', background: '060c4d', foreground: 'ffffff'},
+                    {token: 'comment', foreground: 'cccccc', fontStyle: 'italic'},
+                    {token: 'keyword', foreground: '31efb8'}
+                ]
+            });
 
-        blocks.forEach(block => {
-            const editorContainer = block.querySelector('.editor-wrapper > div');
+            const editor = monaco.editor.create(editorContainer, {
+                value: initialValue || `// Enter your ${language} code here...`,
+                language: language,
+                theme: 'flatpack',
+                wordWrap: 'on',
+                minimap: {enabled: false},
+                scrollBeyondLastLine: false,
+                accessibilitySupport: 'off',
+                autoIndent: 'advanced',
+                automaticLayout: false,
+                bracketPairColorization: {
+                    enabled: true
+                },
+                hideCursorInOverviewRuler: true,
+                overviewRulerBorder: false,
+                overviewRulerLanes: 0,
+                padding: {
+                    top: 25,
+                    bottom: 20
+                },
+                scrollBeyondLastColumn: 0,
+                scrollbar: {
+                    horizontal: 'hidden',
+                    vertical: 'hidden'
+                },
+                showUnused: true,
+                smoothScrolling: true,
+                stickyScroll: {
+                    enabled: false
+                },
+                unusualLineTerminators: 'auto',
+                wrappingIndent: 'same',
+                wrappingStrategy: 'advanced'
+            });
 
-            if (editorContainer) {
-                const uniqueId = block.id;
+            const updateHeight = () => {
+                const contentHeight = Math.min(1000, editor.getContentHeight());
+                editorContainer.style.height = `${contentHeight}px`;
+                editor.layout({height: contentHeight});
+            };
 
-                require.config({paths: {'vs': 'node_modules/monaco-editor/min/vs'}});
+            editor.onDidContentSizeChange(updateHeight);
+            updateHeight();
 
-                require(['vs/editor/editor.main'], function () {
-                    const language = block.classList.contains('part-python') ? 'python' : 'bash';
-                    const initialValue = editorContainer.textContent.trim() || '// Enter your ' + language + ' code here...';
-
-                    editorContainer.textContent = '';
-
-                    monaco.editor.defineTheme('flatpack', {
-                        base: 'vs-dark',
-                        colors: {
-                            'editor.background': '#060c4d',
-                            'editor.lineHighlightBackground': '#080f61'
-                        },
-                        inherit: true,
-                        rules: [
-                            {token: '', background: '060c4d', foreground: 'ffffff'},
-                            {token: 'comment', foreground: 'cccccc', fontStyle: 'italic'},
-                            {token: 'keyword', foreground: '31efb8'}
-                        ]
-                    });
-
-                    monaco.editor.create(editorContainer, {
-                        accessibilitySupport: 'off',
-                        autoIndent: 'advanced',
-                        automaticLayout: false,
-                        bracketPairColorization: {
-                            enabled: true
-                        },
-                        hideCursorInOverviewRuler: true,
-                        language: language,
-                        minimap: {
-                            enabled: false
-                        },
-                        overviewRulerBorder: false,
-                        overviewRulerLanes: 0,
-                        padding: {
-                            top: 25,
-                            bottom: 20
-                        },
-                        scrollBeyondLastColumn: 0,
-                        scrollBeyondLastLine: false,
-                        scrollbar: {
-                            horizontal: 'hidden',
-                            vertical: 'hidden'
-                        },
-                        showUnused: true,
-                        smoothScrolling: true,
-                        stickyScroll: {
-                            enabled: false
-                        },
-                        theme: 'flatpack',
-                        unusualLineTerminators: 'auto',
-                        value: initialValue,
-                        wordWrap: 'on',
-                        wrappingIndent: 'same',
-                        wrappingStrategy: 'advanced'
-                    });
-
-                    console.log(`Editor created for ${language} block ${uniqueId}`);
-                });
-            }
+            console.log(`Editor created for ${language} block`);
         });
+    });
+}
+
+function initializeMonacoEditorForExistingBlocks() {
+    const blocks = document.querySelectorAll('.part-python, .part-bash');
+    blocks.forEach(block => {
+        const editorContainer = block.querySelector('.editor-wrapper > div');
+        if (editorContainer) {
+            const language = block.classList.contains('part-python') ? 'python' : 'bash';
+            const initialValue = editorContainer.textContent.trim();
+            editorContainer.textContent = '';
+            initializeMonacoEditor(editorContainer, language, initialValue);
+        }
     });
 }
 
@@ -2110,6 +2024,8 @@ document.getElementById('hook-form').addEventListener('submit', async function (
 window.addEventListener('resize', resizeAllTextareas);
 
 document.addEventListener('DOMContentLoaded', async () => {
+    initializeMonacoEditorForExistingBlocks();
+
     const abortButton = document.getElementById('abort-build-button');
 
     if (abortButton) {
