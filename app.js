@@ -185,17 +185,17 @@ function addBlock(type) {
         let language;
 
         if (type === 'python') {
-            initialValue = "# This is a Python block. Start coding here...\n\n";
+            initialValue = "# This is a Python block. Start coding here...";
             language = 'python';
         } else if (type === 'bash') {
-            initialValue = "# This is a Bash block. Start coding here...\n\n";
+            initialValue = "# This is a Bash block. Start coding here...";
             language = 'shell';
         } else {
-            initialValue = `// This is a ${type} block. Start coding here...\n\n`;
+            initialValue = `// This is a ${type} block. Start coding here...`;
             language = 'plaintext';
         }
 
-        monaco.editor.create(document.getElementById(`editor-${uniqueId}`), {
+        const editor = monaco.editor.create(document.getElementById(`editor-${uniqueId}`), {
             accessibilitySupport: 'off',
             autoIndent: 'advanced',
             automaticLayout: true,
@@ -232,7 +232,14 @@ function addBlock(type) {
             wrappingStrategy: 'advanced'
         });
 
-        editorContainer.style.minHeight = '100px';
+        const updateHeight = () => {
+            const contentHeight = Math.max(100, Math.min(1000, editor.getContentHeight()));
+            editorContainer.style.height = `${contentHeight}px`;
+            editor.layout();
+        };
+
+        editor.onDidContentSizeChange(updateHeight);
+        updateHeight();
     });
 }
 
@@ -1213,7 +1220,7 @@ function initializeMonacoEditorForExistingBlocks() {
                     ]
                 });
 
-                monaco.editor.create(editorContainer, {
+                const editor = monaco.editor.create(editorContainer, {
                     accessibilitySupport: 'off',
                     autoIndent: 'advanced',
                     automaticLayout: true,
@@ -1250,6 +1257,14 @@ function initializeMonacoEditorForExistingBlocks() {
                     wrappingStrategy: 'advanced'
                 });
 
+                const updateHeight = () => {
+                    const contentHeight = Math.max(100, Math.min(1000, editor.getContentHeight()));
+                    editorContainer.style.height = `${contentHeight}px`;
+                    editor.layout();
+                };
+
+                editor.onDidContentSizeChange(updateHeight);
+                updateHeight();
             });
         }
     });
