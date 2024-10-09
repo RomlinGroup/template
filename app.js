@@ -83,6 +83,7 @@ const regularEyeIcon = `
   <circle cx="8" cy="8" r="2" stroke="#5865f2" stroke-width="1" fill="none"/>
 </svg>`;
 
+let buildStatusCleared = false;
 let buildStatusInterval;
 let consecutiveErrors = 0;
 let currentPart = 1;
@@ -474,10 +475,12 @@ async function checkBuildStatus() {
 
         window.consecutiveErrors = 0;
 
-        if (data && (data.status === 'completed' || data.status === 'failed')) {
+        if (data && (data.status === 'completed' || data.status === 'failed') && !buildStatusCleared) {
             try {
                 await callAPI('clear-build-status', apiToken, 'POST');
+                buildStatusCleared = true;
             } catch (e) {
+                console.error('Failed to clear build status:', e);
             }
         }
     } catch (error) {
@@ -1904,6 +1907,8 @@ function showStatus(message, isSuccess = true) {
 }
 
 function startBuildStatusCheck() {
+    buildStatusCleared = false;
+    
     if (!buildStatusInterval) {
         buildStatusInterval = setInterval(checkBuildStatus, CHECK_INTERVAL);
     }
