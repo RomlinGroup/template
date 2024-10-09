@@ -773,15 +773,10 @@ async function fetchAndDisplayTextFile(file, container) {
 
         if (lastModified) {
             const modifiedDate = new Date(lastModified);
-            formattedTimestamp = modifiedDate.toLocaleString();
         }
 
         const content = await response.text();
         const trimmedContent = content.trim();
-
-        const timestampElement = document.createElement('div');
-        timestampElement.classList.add('teletext-timestamp');
-        timestampElement.textContent = formattedTimestamp;
 
         const preElement = document.createElement('pre');
         preElement.textContent = trimmedContent;
@@ -800,9 +795,7 @@ async function fetchAndDisplayTextFile(file, container) {
             const fileContainer = document.createElement('div');
             fileContainer.classList.add('text-file-output-wrapper');
 
-            fileContainer.appendChild(timestampElement);
             fileContainer.appendChild(preElement);
-
             container.appendChild(fileContainer);
         }
     } catch (error) {
@@ -870,7 +863,17 @@ async function fetchEvalData() {
     const allowedFiles = ['output.txt', 'output.wav'];
 
     try {
-        const response = await fetch('/output/eval_data.json', {method: 'GET', credentials: 'same-origin'});
+        const response = await fetch('/output/eval_data.json', {
+            method: 'GET',
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        });
+
         if (!response.ok) {
             throw new Error(`Failed to fetch eval_data.json: ${response.status} ${response.statusText}`);
         }
@@ -1305,25 +1308,43 @@ async function initializeApp(apiToken) {
 }
 
 async function loadEvalAndOutputFiles(apiToken) {
+    console.log('loadEvalAndOutputFiles called with token:', apiToken);
+
     try {
+        console.log('Attempting to fetch eval data...');
         await fetchEvalData();
+        console.log('fetchEvalData completed successfully');
     } catch (error) {
         console.warn('Error fetching eval data:', error);
     }
 
     try {
+        console.log('Attempting to get eval JSON...');
         const evalData = await getEvalJSON(apiToken);
+        console.log('Eval JSON received:', evalData);
+
         const evalWidget = document.getElementById('eval-widget');
+        if (!evalWidget) {
+            console.error('eval-widget element not found in the DOM');
+            return;
+        }
 
         if (evalData !== null) {
+            console.log('Setting eval widget innerHTML with data');
             evalWidget.innerHTML = `<pre>${JSON.stringify(evalData, null, 2)}</pre>`;
         } else {
+            console.log('No eval data found, setting default message');
             evalWidget.innerHTML = '<p>No eval_data.json found. This may be normal if no build has been run yet.</p>';
         }
+        console.log('Eval widget updated');
     } catch (error) {
         console.error('Error processing eval data:', error);
         const evalWidget = document.getElementById('eval-widget');
-        evalWidget.innerHTML = `<p>Error processing eval data: ${error.message}</p>`;
+        if (evalWidget) {
+            evalWidget.innerHTML = `<p>Error processing eval data: ${error.message}</p>`;
+        } else {
+            console.error('eval-widget element not found when trying to display error');
+        }
         showStatus('Error processing eval data. Some information may be missing.', false);
     }
 }
