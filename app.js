@@ -31,57 +31,40 @@ const MAX_DISCONNECTED_COUNT = 5;
 const getBaseUrl = () => window.location.origin;
 
 const addCommentIcon = `
-<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-  <path d="M3 3h10v7H5l-2 2V3z" stroke="#31efb8" stroke-width="1" fill="none"/>
-</svg>`;
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M0 0h1v1h-1zM1 0h1v1h-1zM2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM7 0h1v1h-1zM8 0h1v1h-1zM9 0h1v1h-1zM10 0h1v1h-1zM11 0h1v1h-1zM12 0h1v1h-1zM13 0h1v1h-1zM14 0h1v1h-1zM15 0h1v1h-1zM0 1h1v1h-1zM1 1h1v1h-1zM2 1h1v1h-1zM3 1h1v1h-1zM4 1h1v1h-1zM5 1h1v1h-1zM6 1h1v1h-1zM7 1h1v1h-1zM8 1h1v1h-1zM9 1h1v1h-1zM10 1h1v1h-1zM11 1h1v1h-1zM12 1h1v1h-1zM13 1h1v1h-1zM14 1h1v1h-1zM15 1h1v1h-1zM0 2h1v1h-1zM1 2h1v1h-1zM14 2h1v1h-1zM15 2h1v1h-1zM0 3h1v1h-1zM1 3h1v1h-1zM14 3h1v1h-1zM15 3h1v1h-1zM0 4h1v1h-1zM1 4h1v1h-1zM14 4h1v1h-1zM15 4h1v1h-1zM0 5h1v1h-1zM1 5h1v1h-1zM14 5h1v1h-1zM15 5h1v1h-1zM0 6h1v1h-1zM1 6h1v1h-1zM14 6h1v1h-1zM15 6h1v1h-1zM0 7h1v1h-1zM1 7h1v1h-1zM14 7h1v1h-1zM15 7h1v1h-1zM0 8h1v1h-1zM1 8h1v1h-1zM14 8h1v1h-1zM15 8h1v1h-1zM0 9h1v1h-1zM1 9h1v1h-1zM14 9h1v1h-1zM15 9h1v1h-1zM0 10h1v1h-1zM1 10h1v1h-1zM6 10h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM11 10h1v1h-1zM12 10h1v1h-1zM13 10h1v1h-1zM14 10h1v1h-1zM15 10h1v1h-1zM0 11h1v1h-1zM1 11h1v1h-1zM6 11h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM9 11h1v1h-1zM10 11h1v1h-1zM11 11h1v1h-1zM12 11h1v1h-1zM13 11h1v1h-1zM14 11h1v1h-1zM15 11h1v1h-1zM0 12h1v1h-1zM1 12h1v1h-1zM4 12h1v1h-1zM5 12h1v1h-1zM0 13h1v1h-1zM1 13h1v1h-1zM4 13h1v1h-1zM5 13h1v1h-1zM0 14h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM3 14h1v1h-1zM0 15h1v1h-1zM1 15h1v1h-1zM2 15h1v1h-1zM3 15h1v1h-1z" fill="#31efb8"/></svg>
+`;
 
 const arrowDownIcon = `
-<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-  <path d="M8 4v6.5 M5 8l3 3 3-3" stroke="#5865f2" stroke-width="1" fill="none" stroke-linecap="square"/>
-</svg>`;
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M7 2h1v1h-1zM8 2h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM11 8h1v1h-1zM12 8h1v1h-1zM3 9h1v1h-1zM4 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM11 9h1v1h-1zM12 9h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM5 11h1v1h-1zM6 11h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM9 11h1v1h-1zM10 11h1v1h-1zM7 12h1v1h-1zM8 12h1v1h-1zM7 13h1v1h-1zM8 13h1v1h-1z" fill="#5865f2"/></svg>
+`;
 
 const arrowUpIcon = `
-<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-  <path d="M8 12V5.5 M5 8l3-3 3 3" stroke="#5865f2" stroke-width="1" fill="none" stroke-linecap="square"/>
-</svg>`;
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M7 2h1v1h-1zM8 2h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM10 4h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM11 6h1v1h-1zM12 6h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM11 7h1v1h-1zM12 7h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM7 12h1v1h-1zM8 12h1v1h-1zM7 13h1v1h-1zM8 13h1v1h-1z" fill="#5865f2"/></svg>
+`;
 
 const crossedEyeIcon = `
-<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-  <path d="M2 8c2-3 5-3 6-3s4 0 6 3c-2 3-5 3-6 3s-4 0-6-3z" stroke="#5865f2" stroke-width="1" fill="none" stroke-linejoin="miter" stroke-linecap="butt"/>
-  <circle cx="8" cy="8" r="2" stroke="#5865f2" stroke-width="1" fill="none"/>
-  <line x1="2" y1="2" x2="14" y2="14" stroke="#5865f2" stroke-width="1"/>
-</svg>`;
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M13 1h1v1h-1zM14 1h1v1h-1zM13 2h1v1h-1zM14 2h1v1h-1zM4 3h1v1h-1zM5 3h1v1h-1zM6 3h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM9 3h1v1h-1zM10 3h1v1h-1zM11 3h1v1h-1zM12 3h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM10 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM2 5h1v1h-1zM3 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM12 5h1v1h-1zM13 5h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM9 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM13 6h1v1h-1zM0 7h1v1h-1zM1 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM14 7h1v1h-1zM15 7h1v1h-1zM0 8h1v1h-1zM1 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM14 8h1v1h-1zM15 8h1v1h-1zM2 9h1v1h-1zM3 9h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM12 9h1v1h-1zM13 9h1v1h-1zM2 10h1v1h-1zM3 10h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM12 10h1v1h-1zM13 10h1v1h-1zM3 11h1v1h-1zM4 11h1v1h-1zM5 11h1v1h-1zM6 11h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM9 11h1v1h-1zM10 11h1v1h-1zM11 11h1v1h-1zM3 12h1v1h-1zM4 12h1v1h-1zM5 12h1v1h-1zM6 12h1v1h-1zM7 12h1v1h-1zM8 12h1v1h-1zM9 12h1v1h-1zM10 12h1v1h-1zM11 12h1v1h-1zM1 13h1v1h-1zM2 13h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1z" fill="#5865f2"/></svg>
+`;
 
 const editorTrashIcon = `
-<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-  <path d="M4 4h8 M5 4v8h6V4 M8 6v4" stroke="#5865f2" stroke-width="1" fill="none"/>
-  <path d="M6 2h4" stroke="#5865f2" stroke-width="1" fill="none"/>
-</svg>`;
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM7 0h1v1h-1zM8 0h1v1h-1zM9 0h1v1h-1zM10 0h1v1h-1zM11 0h1v1h-1zM12 0h1v1h-1zM13 0h1v1h-1zM2 1h1v1h-1zM3 1h1v1h-1zM4 1h1v1h-1zM5 1h1v1h-1zM6 1h1v1h-1zM7 1h1v1h-1zM8 1h1v1h-1zM9 1h1v1h-1zM10 1h1v1h-1zM11 1h1v1h-1zM12 1h1v1h-1zM13 1h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM10 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM2 5h1v1h-1zM3 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM11 5h1v1h-1zM12 5h1v1h-1zM13 5h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM12 6h1v1h-1zM13 6h1v1h-1zM2 7h1v1h-1zM3 7h1v1h-1zM12 7h1v1h-1zM13 7h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM12 8h1v1h-1zM13 8h1v1h-1zM2 9h1v1h-1zM3 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM12 9h1v1h-1zM13 9h1v1h-1zM2 10h1v1h-1zM3 10h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM12 10h1v1h-1zM13 10h1v1h-1zM2 11h1v1h-1zM3 11h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM12 11h1v1h-1zM13 11h1v1h-1zM2 12h1v1h-1zM3 12h1v1h-1zM12 12h1v1h-1zM13 12h1v1h-1zM2 13h1v1h-1zM3 13h1v1h-1zM12 13h1v1h-1zM13 13h1v1h-1zM2 14h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM11 14h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM2 15h1v1h-1zM3 15h1v1h-1zM4 15h1v1h-1zM5 15h1v1h-1zM6 15h1v1h-1zM7 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM10 15h1v1h-1zM11 15h1v1h-1zM12 15h1v1h-1zM13 15h1v1h-1z" fill="#5865f2"/></svg>
+`;
 
 const fullscreenIcon = `
-<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 5.33V2.67H9.33v2.67H12z" fill="#ffffff"/>
-    <path d="M20 5.33h2.67V2.67H20v2.66z" fill="#ffffff"/>
-    <path d="M2.67 26.67h26.67V8h-9.33V5.33h-2.67V8h-2.67V5.33H12v2.67H2.67v18.67z" fill="#ffffff"/>
-    <rect x="5.33" y="10.67" width="21.33" height="13.33" fill="#5865f2"/>
-</svg>`;
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5 0h1v1h-1zM6 0h1v1h-1zM9 0h1v1h-1zM10 0h1v1h-1zM5 1h1v1h-1zM6 1h1v1h-1zM9 1h1v1h-1zM10 1h1v1h-1zM7 2h1v1h-1zM8 2h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM10 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM2 5h1v1h-1zM3 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM11 5h1v1h-1zM12 5h1v1h-1zM13 5h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM12 6h1v1h-1zM13 6h1v1h-1zM2 7h1v1h-1zM3 7h1v1h-1zM12 7h1v1h-1zM13 7h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM12 8h1v1h-1zM13 8h1v1h-1zM2 9h1v1h-1zM3 9h1v1h-1zM12 9h1v1h-1zM13 9h1v1h-1zM2 10h1v1h-1zM3 10h1v1h-1zM12 10h1v1h-1zM13 10h1v1h-1zM2 11h1v1h-1zM3 11h1v1h-1zM12 11h1v1h-1zM13 11h1v1h-1zM2 12h1v1h-1zM3 12h1v1h-1zM4 12h1v1h-1zM5 12h1v1h-1zM6 12h1v1h-1zM7 12h1v1h-1zM8 12h1v1h-1zM9 12h1v1h-1zM10 12h1v1h-1zM11 12h1v1h-1zM12 12h1v1h-1zM13 12h1v1h-1zM2 13h1v1h-1zM3 13h1v1h-1zM4 13h1v1h-1zM5 13h1v1h-1zM6 13h1v1h-1zM7 13h1v1h-1zM8 13h1v1h-1zM9 13h1v1h-1zM10 13h1v1h-1zM11 13h1v1h-1zM12 13h1v1h-1zM13 13h1v1h-1z" fill="#ffffff"/></svg>
+`;
 
 const hooksTrashIcon = `
-<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-  <path d="M4 4h8 M5 4v8h6V4 M8 6v4" stroke="#060c4d" stroke-width="1" fill="none"/>
-  <path d="M6 2h4" stroke="#060c4d" stroke-width="1" fill="none"/>
-</svg>`;
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM7 0h1v1h-1zM8 0h1v1h-1zM9 0h1v1h-1zM10 0h1v1h-1zM11 0h1v1h-1zM12 0h1v1h-1zM13 0h1v1h-1zM2 1h1v1h-1zM3 1h1v1h-1zM4 1h1v1h-1zM5 1h1v1h-1zM6 1h1v1h-1zM7 1h1v1h-1zM8 1h1v1h-1zM9 1h1v1h-1zM10 1h1v1h-1zM11 1h1v1h-1zM12 1h1v1h-1zM13 1h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM10 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM2 5h1v1h-1zM3 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM11 5h1v1h-1zM12 5h1v1h-1zM13 5h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM12 6h1v1h-1zM13 6h1v1h-1zM2 7h1v1h-1zM3 7h1v1h-1zM12 7h1v1h-1zM13 7h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM12 8h1v1h-1zM13 8h1v1h-1zM2 9h1v1h-1zM3 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM12 9h1v1h-1zM13 9h1v1h-1zM2 10h1v1h-1zM3 10h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM12 10h1v1h-1zM13 10h1v1h-1zM2 11h1v1h-1zM3 11h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM12 11h1v1h-1zM13 11h1v1h-1zM2 12h1v1h-1zM3 12h1v1h-1zM12 12h1v1h-1zM13 12h1v1h-1zM2 13h1v1h-1zM3 13h1v1h-1zM12 13h1v1h-1zM13 13h1v1h-1zM2 14h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM11 14h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM2 15h1v1h-1zM3 15h1v1h-1zM4 15h1v1h-1zM5 15h1v1h-1zM6 15h1v1h-1zM7 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM10 15h1v1h-1zM11 15h1v1h-1zM12 15h1v1h-1zM13 15h1v1h-1z" fill="#060c4d"/></svg>
+`;
 
 const minusIcon = `
-<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-  <rect x="3" y="5" width="10" height="2" fill="#ff8d80"/>
-</svg>`;
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M2 7h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM5 7h1v1h-1zM6 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM9 7h1v1h-1zM10 7h1v1h-1zM11 7h1v1h-1zM12 7h1v1h-1zM13 7h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1zM10 8h1v1h-1zM11 8h1v1h-1zM12 8h1v1h-1zM13 8h1v1h-1z" fill="#000000"/></svg>
+`;
 
 const regularEyeIcon = `
-<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-  <path d="M2 8c2-3 5-3 6-3s4 0 6 3c-2 3-5 3-6 3s-4 0-6-3z" stroke="#5865f2" stroke-width="1" fill="none" stroke-linejoin="miter" stroke-linecap="butt"/>
-  <circle cx="8" cy="8" r="2" stroke="#5865f2" stroke-width="1" fill="none"/>
-</svg>`;
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M4 3h1v1h-1zM5 3h1v1h-1zM6 3h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM9 3h1v1h-1zM10 3h1v1h-1zM11 3h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM10 4h1v1h-1zM11 4h1v1h-1zM2 5h1v1h-1zM3 5h1v1h-1zM12 5h1v1h-1zM13 5h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM12 6h1v1h-1zM13 6h1v1h-1zM0 7h1v1h-1zM1 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM14 7h1v1h-1zM15 7h1v1h-1zM0 8h1v1h-1zM1 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM14 8h1v1h-1zM15 8h1v1h-1zM2 9h1v1h-1zM3 9h1v1h-1zM12 9h1v1h-1zM13 9h1v1h-1zM2 10h1v1h-1zM3 10h1v1h-1zM12 10h1v1h-1zM13 10h1v1h-1zM4 11h1v1h-1zM5 11h1v1h-1zM6 11h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM9 11h1v1h-1zM10 11h1v1h-1zM11 11h1v1h-1zM4 12h1v1h-1zM5 12h1v1h-1zM6 12h1v1h-1zM7 12h1v1h-1zM8 12h1v1h-1zM9 12h1v1h-1zM10 12h1v1h-1zM11 12h1v1h-1z" fill="#5865f2"/></svg>
+`;
 
 let buildStatusCleared = false;
 let buildStatusInterval;
@@ -550,19 +533,39 @@ async function checkHeartbeat(apiToken) {
             enableInteractions();
         }
     } catch (error) {
-        handleDisconnection();
+        console.error('Heartbeat error:', error);
+        handleDisconnection(error);
     }
 
-    function handleDisconnection() {
+    function handleDisconnection(error) {
         disconnectedCount++;
 
-        if (disconnectedCount >= MAX_DISCONNECTED_COUNT) {
+        if (error.status === 403) {
+            handleForbiddenError();
+        } else if (disconnectedCount >= MAX_DISCONNECTED_COUNT) {
             setDisconnectedState();
         } else {
-            heartbeatTime.textContent = 'Reconnecting';
-            heartbeatDot.classList.remove('connected');
-            heartbeatDot.classList.add('disconnected');
+            setReconnectingState();
         }
+    }
+
+    function handleForbiddenError() {
+        console.error('403 Forbidden error. Refreshing CSRF token...');
+        refreshCSRFToken()
+            .then(() => {
+                console.log('CSRF token refreshed. Retrying heartbeat...');
+                disconnectedCount = 0;
+            })
+            .catch(refreshError => {
+                console.error('Failed to refresh CSRF token:', refreshError);
+                setDisconnectedState();
+            });
+    }
+
+    function setReconnectingState() {
+        heartbeatTime.textContent = 'Reconnecting';
+        heartbeatDot.classList.remove('connected');
+        heartbeatDot.classList.add('disconnected');
     }
 
     function setDisconnectedState() {
@@ -863,8 +866,6 @@ async function fetchEvalData() {
     if (isFetchingEvalData) return;
     isFetchingEvalData = true;
 
-    const allowedFiles = ['output.txt', 'output.wav'];
-
     try {
         const response = await fetch('/output/eval_data.json', {
             method: 'GET',
@@ -899,28 +900,30 @@ async function fetchEvalData() {
 
         let hasOutput = false;
 
-        for (const file of data) {
-            if (!file.public || !file.type) {
-                console.warn('Skipping invalid file entry:', file);
-                continue;
-            }
+        const sortedFiles = data.sort((a, b) => {
+            const typeOrder = {
+                'image/png': 1,
+                'image/jpeg': 1,
+                'image/gif': 1,
+                'text/plain': 2,
+                'audio/x-wav': 3
+            };
+            return (typeOrder[a.type] || 99) - (typeOrder[b.type] || 99);
+        });
 
-            const fileName = file.public.split('/').pop();
-            if (!allowedFiles.includes(fileName)) {
-                console.warn(`File not allowed or not in the allowed list: ${fileName}`);
+        for (const file of sortedFiles) {
+            if (!file.public || !file.type) {
                 continue;
             }
 
             const sanitizedPublicPath = encodeURI(file.public);
 
-            if (file.type === 'text/plain') {
+            if (file.type === 'text/plain' && file.public.endsWith('output.txt')) {
                 await fetchAndDisplayTextFile({...file, public: sanitizedPublicPath}, outputWidget);
                 hasOutput = true;
-            } else if (file.type === 'audio/x-wav') {
+            } else if (file.type === 'audio/x-wav' && file.public.endsWith('output.wav')) {
                 displayAudioFile({...file, public: sanitizedPublicPath}, outputWidget);
                 hasOutput = true;
-            } else {
-                console.warn(`Unsupported file type: ${file.type}`);
             }
         }
 
@@ -1110,6 +1113,7 @@ function handleBuildStatus(status) {
                 fetchEvalData();
                 fetchLatestLogs(localStorage.getItem('apiToken'));
                 fetchSchedule();
+                listImageFiles();
                 localStorage.removeItem('buildStatus');
                 exitFullscreen();
                 break;
@@ -1290,6 +1294,7 @@ async function initializeApp(apiToken) {
         await Promise.all([
             setupEventListeners(apiToken),
             checkHeartbeat(apiToken),
+            listImageFiles(apiToken),
             loadDefaultFile(apiToken),
             fetchComments(apiToken),
             fetchHooks(apiToken),
@@ -1299,6 +1304,7 @@ async function initializeApp(apiToken) {
         ]);
 
         initBuildStatusCheck();
+
         setInterval(() => checkHeartbeat(apiToken), 1000);
     } catch (error) {
         console.error('Error initializing app:', error);
@@ -1310,21 +1316,72 @@ async function initializeApp(apiToken) {
     }
 }
 
+async function listImageFiles() {
+    try {
+        const response = await callAPI('list_image_files', localStorage.getItem('apiToken'), 'GET');
+        const imageListContainer = document.getElementById('image-list-container');
+
+        if (!imageListContainer) {
+            console.error('Image list container not found in the DOM');
+            showStatus('Error: Image list container not found.', false);
+            return;
+        }
+
+        if (response.files && Array.isArray(response.files)) {
+            if (response.files.length > 0) {
+                imageListContainer.style.display = 'block';
+                imageListContainer.innerHTML = '<div class="gallery"></div>';
+                const gallery = imageListContainer.querySelector('.gallery');
+
+                response.files.forEach(file => {
+                    const galleryItem = document.createElement('div');
+                    galleryItem.className = 'gallery-item';
+                    const createdDate = new Date(file.created_at * 1000);
+                    const dateString = createdDate.toLocaleString();
+
+                    galleryItem.innerHTML = `
+                        <div class="image-container">
+                            <a href="/output/${file.name}" download="${file.name}" class="download-link">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M7 0h1v1h-1zM8 0h1v1h-1zM7 1h1v1h-1zM8 1h1v1h-1zM7 2h1v1h-1zM8 2h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM11 6h1v1h-1zM12 6h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM11 7h1v1h-1zM12 7h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1zM10 8h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM9 9h1v1h-1zM10 9h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM0 12h1v1h-1zM1 12h1v1h-1zM14 12h1v1h-1zM15 12h1v1h-1zM0 13h1v1h-1zM1 13h1v1h-1zM14 13h1v1h-1zM15 13h1v1h-1zM0 14h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM11 14h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1zM15 14h1v1h-1zM0 15h1v1h-1zM1 15h1v1h-1zM2 15h1v1h-1zM3 15h1v1h-1zM4 15h1v1h-1zM5 15h1v1h-1zM6 15h1v1h-1zM7 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM10 15h1v1h-1zM11 15h1v1h-1zM12 15h1v1h-1zM13 15h1v1h-1zM14 15h1v1h-1zM15 15h1v1h-1z" fill="#000000"/></svg>
+                            </a>
+                            <img src="/output/${file.name}?cb=${Date.now()}" alt="${file.name}" loading="lazy">
+                        </div>
+                        
+                        <p>${file.name}</p>
+                    `;
+
+                    gallery.appendChild(galleryItem);
+                });
+
+                showStatus('Image files updated successfully.', true);
+            } else {
+                imageListContainer.style.display = 'none';
+                showStatus('No image files found.', false);
+            }
+        } else {
+            throw new Error('Invalid response format');
+        }
+    } catch (error) {
+        console.error('Error listing image files:', error);
+        const errorMessage = error.message || 'Unknown error occurred';
+        showStatus(`Error listing image files: ${errorMessage}`, false);
+        const imageListContainer = document.getElementById('image-list-container');
+        if (imageListContainer) {
+            imageListContainer.style.display = 'none';
+        }
+    }
+}
+
 async function loadEvalAndOutputFiles(apiToken) {
-    console.log('loadEvalAndOutputFiles called with token:', apiToken);
 
     try {
-        console.log('Attempting to fetch eval data...');
         await fetchEvalData();
-        console.log('fetchEvalData completed successfully');
     } catch (error) {
         console.warn('Error fetching eval data:', error);
     }
 
     try {
-        console.log('Attempting to get eval JSON...');
         const evalData = await getEvalJSON(apiToken);
-        console.log('Eval JSON received:', evalData);
 
         const evalWidget = document.getElementById('eval-widget');
         if (!evalWidget) {
@@ -1333,13 +1390,10 @@ async function loadEvalAndOutputFiles(apiToken) {
         }
 
         if (evalData !== null) {
-            console.log('Setting eval widget innerHTML with data');
             evalWidget.innerHTML = `<pre>${JSON.stringify(evalData, null, 2)}</pre>`;
         } else {
-            console.log('No eval data found, setting default message');
             evalWidget.innerHTML = '<p>No eval_data.json found. This may be normal if no build has been run yet.</p>';
         }
-        console.log('Eval widget updated');
     } catch (error) {
         console.error('Error processing eval data:', error);
         const evalWidget = document.getElementById('eval-widget');
@@ -1452,6 +1506,21 @@ async function refreshCommentsFromBackend() {
     comments.length = 0;
     await fetchComments();
     renderComments();
+}
+
+async function refreshCSRFToken() {
+    try {
+        const response = await fetch('/csrf-token');
+        if (!response.ok) {
+            throw new Error('Failed to fetch new CSRF token');
+        }
+        const data = await response.json();
+        localStorage.setItem('csrfToken', data.csrf_token);
+        return data.csrf_token;
+    } catch (error) {
+        console.error('Error refreshing CSRF token:', error);
+        throw error;
+    }
 }
 
 function renderComments() {
@@ -1908,7 +1977,7 @@ function showStatus(message, isSuccess = true) {
 
 function startBuildStatusCheck() {
     buildStatusCleared = false;
-    
+
     if (!buildStatusInterval) {
         buildStatusInterval = setInterval(checkBuildStatus, CHECK_INTERVAL);
     }
@@ -2048,21 +2117,7 @@ async function validateAndInitialize(apiToken) {
 }
 
 async function verifyCode(apiToken) {
-    try {
-        const csrfToken = localStorage.getItem('csrfToken');
-        const headers = {'X-CSRF-Token': csrfToken};
-        const response = await callAPI('verify', apiToken, 'POST', null, headers);
-
-        if (response.message === "Verification process completed successfully.") {
-            showStatus('Verification successful!', true);
-        } else {
-            showStatus('Verification failed!', false);
-        }
-
-    } catch (error) {
-        console.error('Error during verification:', error);
-        showStatus('Error during verification!', false);
-    }
+    console.log('verifyCode');
 }
 
 document.getElementById('hook-form').addEventListener('submit', async function (event) {
