@@ -86,6 +86,19 @@ textarea {
     border-radius: 0;
 }
 
+.close-lightbox {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    background: #5865f2;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+}
+
 .color-label {
     height: 5px;
     left: 0;
@@ -189,9 +202,9 @@ textarea {
 
 .download-link {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    background: #fff;
+    top: 0px;
+    right: 0px;
+    background: #5865f2;
     padding: 5px;
     display: flex;
     align-items: center;
@@ -380,6 +393,32 @@ textarea {
 .hook-type-container .delete-button svg {
     width: 16px;
     height: 16px;
+}
+
+.lightbox {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(6, 12, 77, 0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2147483646;
+}
+
+.lightbox-content {
+    position: relative;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.lightbox-content img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border: 1px solid #5865f2;
 }
 
 .part-bash .color-label,
@@ -835,7 +874,6 @@ textarea {
     line-height: 1.5;
     margin: 20px 0;
     padding: 20px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 #image-list-container .gallery {
@@ -851,13 +889,13 @@ textarea {
     align-items: center;
     text-align: center;
     background-color: #fff;
-    border-radius: 5px;
+    border: 1px solid #5865f2;
     overflow: hidden;
 }
 
 #image-list-container .gallery-item .image-container {
     width: 100%;
-    height: 160px;
+    height: auto;
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -866,8 +904,7 @@ textarea {
 
 #image-list-container .gallery-item img {
     width: 100%;
-    height: 100%;
-    padding: 10px;
+    height: auto;
     object-fit: cover;
     object-position: center;
     display: block;
@@ -880,7 +917,6 @@ textarea {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    width: calc(100% - 20px);
 }
 
 #output-widget {
