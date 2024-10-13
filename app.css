@@ -430,7 +430,7 @@ svg {
 }
 
 .lightbox-content img {
-    max-width: 100%;
+    max-width: 400px;
     max-height: auto;
     object-fit: contain;
     border: 1px solid #f0f2ff;
@@ -441,7 +441,7 @@ svg {
 
 .lightbox-filename {
     font-family: 'robotomono';
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.5em;
     text-align: center;
     word-break: break-all;
