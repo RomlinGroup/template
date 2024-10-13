@@ -2,10 +2,10 @@
 # WIP ({{current_date}})
 
 version = "0.0.1"
-python_version = "3.12"
 
 [environment]
 model_name = "{{model_name}}"
+python_version = "3.12"
 
 [[port]]
 external = 8080
