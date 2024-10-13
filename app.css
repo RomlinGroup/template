@@ -913,15 +913,13 @@ svg {
     align-items: center;
     text-align: center;
     background-color: #fff;
-    border: 1px solid #f0f2ff;
-    border-radius: 10px;
     overflow: hidden;
     cursor: pointer;
 }
 
 #image-list-container .gallery-item .image-container {
     width: 100%;
-    aspect-ratio: 1 / 1;
+    height: auto;
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -933,6 +931,8 @@ svg {
     height: 100%;
     object-fit: cover;
     object-position: center;
+    border: 1px solid #f0f2ff;
+    border-radius: 10px;
 }
 
 #input-hooks {
