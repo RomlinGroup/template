@@ -1383,11 +1383,8 @@ async function listImageFiles() {
 
                     gallery.appendChild(galleryItem);
                 });
-
-                showStatus('Image files updated successfully.', true);
             } else {
                 imageListContainer.style.display = 'none';
-                showStatus('No image files found.', false);
             }
         } else {
             throw new Error('Invalid response format');
