@@ -38,7 +38,7 @@ tqdm = "4.66.5"
 # from_source = "{{git_source_url}}"
 # to_destination = "{{git_destination_dir}}"
 # branch = "{{branch_name}}"
-# requirements_file = "{{requirements_file}}"
+# requirements_file = "requirements.txt"
 # setup_commands = [
 #   "{{setup_command}}"
 # ]
