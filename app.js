@@ -333,6 +333,7 @@ async function buildProject(apiToken) {
             throw new Error('Unexpected response from build API');
         }
 
+        reattachToggleListeners();
     } catch (error) {
         console.error('Failed to build project:', error);
         showStatus(`Error: ${error.message}`, false);
@@ -1527,6 +1528,16 @@ async function postComment(blockId, selectedText, comment) {
     } catch (error) {
         throw new Error(`Failed to add comment: ${error.message}`);
     }
+}
+
+function reattachToggleListeners() {
+    document.querySelectorAll('.toggle-button').forEach(button => {
+        button.onclick = () => {
+            const block = button.closest('.part-python, .part-bash');
+            toggleBlock(block);
+            updateToggleButtonIcon(button, block);
+        };
+    });
 }
 
 async function refreshCommentsFromBackend() {
