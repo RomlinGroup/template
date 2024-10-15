@@ -1009,7 +1009,6 @@ async function fetchLatestLogs(apiToken) {
             logDropdown.dispatchEvent(new Event('change'));
         } else {
             renderLogContent("No log files found.");
-            showStatus('No log files found!', false);
         }
     } catch (error) {
         renderLogContent("Error fetching log files.");
