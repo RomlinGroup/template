@@ -69,7 +69,6 @@ const regularEyeIcon = `
 let buildStatusCleared = false;
 let buildStatusInterval;
 let consecutiveErrors = 0;
-let currentPart = 1;
 let currentStepIndex = -1;
 let disconnectedCount = 0;
 let highlightTimeout;
@@ -79,7 +78,6 @@ let isFetchingEvalData = false;
 let lastStatus = '';
 let lastStep = '';
 let manualDatetimes = [];
-let originalContent = '';
 
 async function abortBuild(apiToken) {
     try {
