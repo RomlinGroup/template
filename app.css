@@ -553,7 +553,7 @@ svg {
 .tab-content {
     display: none;
     margin: 0 auto;
-    max-width: 1320px;
+    max-width: 800px;
     width: 100%;
 }
 
@@ -580,7 +580,7 @@ svg {
     justify-content: flex-start;
     margin: 0 auto;
     margin-top: 64px;
-    max-width: 1320px;
+    max-width: 800px;
     width: 100%;
 }
 
@@ -827,7 +827,7 @@ svg {
     border: 1px solid #5865f2;
     border-top: 0;
     margin: 0 auto 20px;
-    max-width: 1320px;
+    max-width: 800px;
     padding: 20px;
     position: relative;
     width: 100%;
@@ -1012,7 +1012,7 @@ svg {
 #status-bar {
     display: none;
     margin-top: 84px;
-    max-width: 1320px;
+    max-width: 800px;
     padding: 20px;
     text-align: center;
     width: 100%;
@@ -1080,7 +1080,7 @@ svg {
 }
 
 /* Media queries */
-@media (max-width: 1320px) {
+@media (max-width: 800px) {
     #hooks,
     #log,
     #wrapper {
