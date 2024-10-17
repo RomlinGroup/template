@@ -476,9 +476,6 @@ async function checkBuildStatus() {
             if (typeof stopBuildStatusCheck === 'function') {
                 stopBuildStatusCheck();
             }
-            if (typeof showStatus === 'function') {
-                showStatus('Connection lost or server error. Build status check stopped.', false);
-            }
         } else {
             if (typeof handleBuildStatus === 'function') {
                 handleBuildStatus('unknown');
