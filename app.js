@@ -735,12 +735,6 @@ function displayAudioFile(file, container) {
     audioElement.controls = true;
     audioElement.autoplay = false;
     audioElement.src = `${file.public}?cb=${timestamp}`;
-
-    const audioContainer = document.createElement('div');
-    audioContainer.classList.add('audio-file-output', 'audio-player');
-    audioContainer.appendChild(audioElement);
-
-    container.appendChild(audioContainer);
 }
 
 function displayLightbox(imageSrc) {
