@@ -1292,6 +1292,14 @@ function initializeMonacoEditorForExistingBlocks() {
                 editor.onDidContentSizeChange(updateHeight);
                 updateHeight();
             });
+
+            const toggleButton = block.querySelector('.toggle-button');
+            if (toggleButton) {
+                toggleButton.onclick = () => {
+                    toggleBlock(block);
+                    updateToggleButtonIcon(toggleButton, block);
+                };
+            }
         }
     });
 }
@@ -2212,6 +2220,17 @@ document.getElementById('hook-form').addEventListener('submit', async function (
 });
 
 window.addEventListener('resize', resizeAllTextareas);
+
+document.getElementById('file-content').addEventListener('click', function (event) {
+    if (event.target.closest('.toggle-button')) {
+        const button = event.target.closest('.toggle-button');
+        const block = button.closest('.part-python, .part-bash');
+        if (block) {
+            toggleBlock(block);
+            updateToggleButtonIcon(button, block);
+        }
+    }
+});
 
 document.addEventListener('DOMContentLoaded', async () => {
     const abortButton = document.getElementById('abort-build-button');
