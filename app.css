@@ -895,18 +895,26 @@ svg {
     padding: 20px;
 }
 
-#image-list-container {
+#input-hooks {
+    font-family: 'robotomono';
+    font-size: 14px;
+    line-height: 1.5em;
+    background: #eafdf8;
+    padding: 20px;
+}
+
+#media-list-container {
     display: none;
     margin: 20px 0;
 }
 
-#image-list-container .gallery {
+#media-list-container .gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 16px;
 }
 
-#image-list-container .gallery-item {
+#media-list-container .gallery-item {
     display: flex;
     position: relative;
     flex-direction: column;
@@ -917,7 +925,7 @@ svg {
     cursor: pointer;
 }
 
-#image-list-container .gallery-item .image-container {
+#media-list-container .gallery-item .media-container {
     width: 100%;
     height: auto;
     overflow: hidden;
@@ -926,21 +934,13 @@ svg {
     justify-content: center;
 }
 
-#image-list-container .gallery-item img {
+#media-list-container .gallery-item img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     object-position: center;
     border: 1px solid #f0f2ff;
     border-radius: 10px;
-}
-
-#input-hooks {
-    font-family: 'robotomono';
-    font-size: 14px;
-    line-height: 1.5em;
-    background: #eafdf8;
-    padding: 20px;
 }
 
 #output-widget {

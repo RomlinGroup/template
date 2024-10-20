@@ -1130,7 +1130,7 @@ function handleBuildStatus(status) {
                 fetchEvalData();
                 fetchLatestLogs(localStorage.getItem('apiToken'));
                 fetchSchedule();
-                listImageFiles();
+                listMediaFiles();
                 localStorage.removeItem('buildStatus');
                 exitFullscreen();
                 break;
@@ -1319,7 +1319,7 @@ async function initializeApp(apiToken) {
         await Promise.all([
             setupEventListeners(apiToken),
             checkHeartbeat(apiToken),
-            listImageFiles(apiToken),
+            listMediaFiles(apiToken),
             loadDefaultFile(apiToken),
             fetchComments(apiToken),
             fetchHooks(apiToken),
@@ -1341,22 +1341,22 @@ async function initializeApp(apiToken) {
     }
 }
 
-async function listImageFiles() {
+async function listMediaFiles() {
     try {
-        const response = await callAPI('list_image_files', localStorage.getItem('apiToken'), 'GET');
-        const imageListContainer = document.getElementById('image-list-container');
+        const response = await callAPI('list_media_files', localStorage.getItem('apiToken'), 'GET');
+        const mediaListContainer = document.getElementById('media-list-container');
 
-        if (!imageListContainer) {
-            console.error('Image list container not found in the DOM');
-            showStatus('Error: Image list container not found.', false);
+        if (!mediaListContainer) {
+            console.error('Media list container not found in the DOM');
+            showStatus('Error: Media list container not found.', false);
             return;
         }
 
         if (response.files && Array.isArray(response.files)) {
             if (response.files.length > 0) {
-                imageListContainer.style.display = 'block';
-                imageListContainer.innerHTML = '<div class="gallery"></div>';
-                const gallery = imageListContainer.querySelector('.gallery');
+                mediaListContainer.style.display = 'block';
+                mediaListContainer.innerHTML = '<div class="gallery"></div>';
+                const gallery = mediaListContainer.querySelector('.gallery');
 
                 response.files.forEach(file => {
                     const galleryItem = document.createElement('div');
@@ -1365,7 +1365,7 @@ async function listImageFiles() {
                     const dateString = createdDate.toLocaleString();
 
                     galleryItem.innerHTML = `
-                        <div class="image-container">
+                        <div class="media-container">
                             <a href="/output/${file.name}" download="${file.name}" class="download-link">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M7 0h1v1h-1zM8 0h1v1h-1zM7 1h1v1h-1zM8 1h1v1h-1zM7 2h1v1h-1zM8 2h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM11 6h1v1h-1zM12 6h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM11 7h1v1h-1zM12 7h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1zM10 8h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM9 9h1v1h-1zM10 9h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM0 12h1v1h-1zM1 12h1v1h-1zM14 12h1v1h-1zM15 12h1v1h-1zM0 13h1v1h-1zM1 13h1v1h-1zM14 13h1v1h-1zM15 13h1v1h-1zM0 14h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM11 14h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1zM15 14h1v1h-1zM0 15h1v1h-1zM1 15h1v1h-1zM2 15h1v1h-1zM3 15h1v1h-1zM4 15h1v1h-1zM5 15h1v1h-1zM6 15h1v1h-1zM7 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM10 15h1v1h-1zM11 15h1v1h-1zM12 15h1v1h-1zM13 15h1v1h-1zM14 15h1v1h-1zM15 15h1v1h-1z" fill="#060c4d"/></svg>
                             </a>
@@ -1382,18 +1382,18 @@ async function listImageFiles() {
                     gallery.appendChild(galleryItem);
                 });
             } else {
-                imageListContainer.style.display = 'none';
+                mediaListContainer.style.display = 'none';
             }
         } else {
             throw new Error('Invalid response format');
         }
     } catch (error) {
-        console.error('Error listing image files:', error);
+        console.error('Error listing media files:', error);
         const errorMessage = error.message || 'Unknown error occurred';
-        showStatus(`Error listing image files: ${errorMessage}`, false);
-        const imageListContainer = document.getElementById('image-list-container');
-        if (imageListContainer) {
-            imageListContainer.style.display = 'none';
+        showStatus(`Error listing media files: ${errorMessage}`, false);
+        const mediaListContainer = document.getElementById('media-list-container');
+        if (mediaListContainer) {
+            mediaListContainer.style.display = 'none';
         }
     }
 }
