@@ -1352,6 +1352,8 @@ async function listMediaFiles() {
             return;
         }
 
+        mediaListContainer.innerHTML = '';
+
         if (response.files && Array.isArray(response.files)) {
             if (response.files.length > 0) {
                 mediaListContainer.style.display = 'block';
@@ -1361,40 +1363,54 @@ async function listMediaFiles() {
                 response.files.forEach(file => {
                     const galleryItem = document.createElement('div');
                     galleryItem.className = 'gallery-item';
-                    const createdDate = new Date(file.created_at * 1000);
-                    const dateString = createdDate.toLocaleString();
 
-                    galleryItem.innerHTML = `
-                        <div class="media-container">
-                            <a href="/output/${file.name}" download="${file.name}" class="download-link">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M7 0h1v1h-1zM8 0h1v1h-1zM7 1h1v1h-1zM8 1h1v1h-1zM7 2h1v1h-1zM8 2h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM11 6h1v1h-1zM12 6h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM11 7h1v1h-1zM12 7h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1zM10 8h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM9 9h1v1h-1zM10 9h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM0 12h1v1h-1zM1 12h1v1h-1zM14 12h1v1h-1zM15 12h1v1h-1zM0 13h1v1h-1zM1 13h1v1h-1zM14 13h1v1h-1zM15 13h1v1h-1zM0 14h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM11 14h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1zM15 14h1v1h-1zM0 15h1v1h-1zM1 15h1v1h-1zM2 15h1v1h-1zM3 15h1v1h-1zM4 15h1v1h-1zM5 15h1v1h-1zM6 15h1v1h-1zM7 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM10 15h1v1h-1zM11 15h1v1h-1zM12 15h1v1h-1zM13 15h1v1h-1zM14 15h1v1h-1zM15 15h1v1h-1z" fill="#060c4d"/></svg>
-                            </a>
-                            <img src="/output/${file.name}?cb=${Date.now()}" alt="${file.name}" loading="lazy">
-                        </div>
-                    `;
+                    const fileExtension = file.name.split('.').pop().toLowerCase();
+                    const imageExtensions = ['jpeg', 'jpg', 'gif', 'png'];
+                    const videoExtensions = ['mp4'];
 
-                    const img = galleryItem.querySelector('img');
+                    if (imageExtensions.includes(fileExtension)) {
+                        galleryItem.innerHTML = `
+                            <div class="media-container">
+                                <a href="/output/${file.name}" download="${file.name}" class="download-link">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M7 0h1v1h-1zM8 0h1v1h-1zM7 1h1v1h-1zM8 1h1v1h-1zM7 2h1v1h-1zM8 2h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM11 6h1v1h-1zM12 6h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM11 7h1v1h-1zM12 7h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1zM10 8h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM9 9h1v1h-1zM10 9h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM0 12h1v1h-1zM1 12h1v1h-1zM14 12h1v1h-1zM15 12h1v1h-1zM0 13h1v1h-1zM1 13h1v1h-1zM14 13h1v1h-1zM15 13h1v1h-1zM0 14h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM11 14h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1zM15 14h1v1h-1zM0 15h1v1h-1zM1 15h1v1h-1zM2 15h1v1h-1zM3 15h1v1h-1zM4 15h1v1h-1zM5 15h1v1h-1zM6 15h1v1h-1zM7 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM10 15h1v1h-1zM11 15h1v1h-1zM12 15h1v1h-1zM13 15h1v1h-1zM14 15h1v1h-1zM15 15h1v1h-1z" fill="#060c4d"/></svg>
+                                </a>
+                                <img src="/output/${file.name}?cb=${Date.now()}" alt="${file.name}" loading="lazy">
+                            </div>
+                        `;
+                        const img = galleryItem.querySelector('img');
 
-                    img.addEventListener('click', () => {
-                        displayLightbox(`/output/${file.name}?cb=${Date.now()}`);
-                    });
+                        if (img) {
+                            img.addEventListener('click', () => {
+                                displayLightbox(`/output/${file.name}?cb=${Date.now()}`);
+                            });
+                        }
 
-                    gallery.appendChild(galleryItem);
+                        gallery.appendChild(galleryItem);
+                    } else if (videoExtensions.includes(fileExtension)) {
+                        // For video files (MP4)
+                        galleryItem.innerHTML = `
+                            <div class="media-container">
+                                <video width="300" controls>
+                                    <source src="/output/${file.name}" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                        `;
+
+                        gallery.appendChild(galleryItem);
+                    }
+
                 });
             } else {
-                mediaListContainer.style.display = 'none';
+                mediaListContainer.style.display = 'block';
+                mediaListContainer.innerHTML = '<p>No media files available.</p>';
             }
         } else {
             throw new Error('Invalid response format');
         }
     } catch (error) {
         console.error('Error listing media files:', error);
-        const errorMessage = error.message || 'Unknown error occurred';
-        showStatus(`Error listing media files: ${errorMessage}`, false);
-        const mediaListContainer = document.getElementById('media-list-container');
-        if (mediaListContainer) {
-            mediaListContainer.style.display = 'none';
-        }
+        showStatus(`Error listing media files: ${error.message || 'Unknown error occurred'}`, false);
     }
 }
 
