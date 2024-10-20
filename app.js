@@ -123,6 +123,7 @@ function addBlock(type) {
     const editorContainer = document.createElement('div');
     editorContainer.id = `editor-${uniqueId}`;
     editorContainer.style.width = '100%';
+    editorContainer.classList.add('editor');
     editorWrapper.appendChild(editorContainer);
 
     const commentButton = document.createElement('button');
@@ -2032,21 +2033,40 @@ function stripFormatting(e) {
 }
 
 function toggleBlock(block) {
+    if (!block) {
+        console.error('Block is null or undefined.');
+        return;
+    }
+
     block.classList.toggle('disabled');
     const editor = block.querySelector('.editor');
     const controls = block.querySelectorAll('.move-up, .move-down, .delete-button');
     const commentButton = block.querySelector('.comment-button');
 
-    if (block.classList.contains('disabled')) {
-        editor.contentEditable = 'false';
-        editor.style.pointerEvents = 'none';
-        controls.forEach(control => control.style.display = 'none');
-        commentButton.style.display = 'none';
+    if (editor) {
+        if (block.classList.contains('disabled')) {
+            editor.contentEditable = 'false';
+            editor.style.pointerEvents = 'none';
+        } else {
+            editor.contentEditable = 'true';
+            editor.style.pointerEvents = 'auto';
+        }
     } else {
-        editor.contentEditable = 'true';
-        editor.style.pointerEvents = 'auto';
-        controls.forEach(control => control.style.display = 'flex');
-        commentButton.style.display = 'flex';
+        console.error('Editor element not found within block:', block);
+    }
+
+    if (controls.length > 0) {
+        controls.forEach(control => {
+            control.style.display = block.classList.contains('disabled') ? 'none' : 'flex';
+        });
+    } else {
+        console.error('Controls not found within block:', block);
+    }
+
+    if (commentButton) {
+        commentButton.style.display = block.classList.contains('disabled') ? 'none' : 'flex';
+    } else {
+        console.error('Comment button not found within block:', block);
     }
 }
 
