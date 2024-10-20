@@ -746,7 +746,7 @@ function displayLightbox(mediaSrc) {
 
     lightbox.innerHTML = `
         <div class="lightbox-content">
-            <img src="$mediaSrc}" alt="Enlarged media">
+            <img src="${mediaSrc}" alt="Enlarged media">
             <p class="lightbox-filename">${filename}</p>
             <button class="close-lightbox">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
