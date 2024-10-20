@@ -738,15 +738,15 @@ function displayAudioFile(file, container) {
     audioElement.src = `${file.public}?cb=${timestamp}`;
 }
 
-function displayLightbox(imageSrc) {
+function displayLightbox(mediaSrc) {
     const lightbox = document.createElement('div');
     lightbox.className = 'lightbox';
 
-    const filename = imageSrc.split('/').pop().split('?')[0];
+    const filename = mediaSrc.split('/').pop().split('?')[0];
 
     lightbox.innerHTML = `
         <div class="lightbox-content">
-            <img src="${imageSrc}" alt="Enlarged image">
+            <img src="$mediaSrc}" alt="Enlarged media">
             <p class="lightbox-filename">${filename}</p>
             <button class="close-lightbox">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
