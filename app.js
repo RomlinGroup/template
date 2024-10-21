@@ -1153,6 +1153,7 @@ function handleBuildStatus(status) {
 function handleBuildStatusError() {
     hideLoadingOverlay();
     enableInteractions();
+    showStatus('Unable to check build status. The server may be unavailable.', false);
 }
 
 async function handleCSRFError() {

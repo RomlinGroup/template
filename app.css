@@ -5,6 +5,23 @@
     font-style: normal;
 }
 
+:root {
+    --color-primary: #5865f2;
+    --color-primary-hover: #4755d5;
+    --color-secondary: #31efb8;
+    --color-tertiary: #ff8d80;
+    --color-background: #ffffff;
+    --color-text: #000000;
+    --color-light-bg: #f0f2ff;
+    --color-dark-bg: #060c4d;
+    --color-accent: #060c4d;
+    --color-placeholder: #888888;
+    --font-family-base: Arial, sans-serif;
+    --font-family-mono: 'robotomono', monospace;
+    --font-size-base: 14px;
+    --line-height-base: 1.5em;
+}
+
 /* Reset and global styles */
 * {
     -moz-osx-font-smoothing: grayscale;
@@ -20,38 +37,39 @@
 /* Element selectors */
 body {
     align-items: center;
-    background: #fff;
+    background: var(--color-background);
+    color: var(--color-text);
     display: flex;
     flex-direction: column;
-    font-family: Arial, sans-serif;
-    font-size: 14px;
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-base);
     justify-content: center;
 }
 
 a {
-    color: #5865f2;
+    color: var(--color-primary);
     text-decoration: none;
 }
 
 h2 {
-    color: #5865f2;
-    font-size: 14px;
+    color: var(--color-primary);
+    font-size: var(--font-size-base);
     line-height: 1;
     margin-bottom: 20px;
-}
-
-textarea {
-    resize: none !important;
 }
 
 svg {
     display: block;
 }
 
+textarea {
+    resize: none !important;
+}
+
 /* Class selectors */
 .action {
-    color: #fff;
-    border: 1px solid #fff;
+    color: #ffffff;
+    border: 1px solid #ffffff;
     cursor: pointer;
     width: 32px;
     height: 32px;
@@ -92,8 +110,8 @@ svg {
 
 .close-lightbox {
     position: absolute;
-    background: #fff;
-    border: 1px solid #f0f2ff;
+    background: var(--color-background);
+    border: 1px solid var(--color-light-bg);
     border-radius: 50%;
     padding: 5px;
     top: 10px;
@@ -114,7 +132,7 @@ svg {
 
 .comment-button {
     background-color: transparent;
-    color: #31efb8;
+    color: var(--color-secondary);
     border: none;
     cursor: pointer;
     position: absolute;
@@ -139,12 +157,12 @@ svg {
 }
 
 .comment-item {
-    border: 1px solid #31efb8;
-    border-left: 5px solid #31efb8;
-    background: #fff;
+    border: 1px solid var(--color-secondary);
+    border-left: 5px solid var(--color-secondary);
+    background: var(--color-background);
     font-size: 12px;
-    line-height: 1.5em;
-    color: #000;
+    line-height: var(--line-height-base);
+    color: var(--color-text);
     padding: 10px;
     margin-bottom: 20px;
     word-break: break-word;
@@ -156,7 +174,7 @@ svg {
 }
 
 .connected {
-    background: #31efb8 !important;
+    background: var(--color-secondary) !important;
 }
 
 .delete-button,
@@ -164,7 +182,7 @@ svg {
 .move-down {
     align-items: center;
     border: 1px solid;
-    color: #fff;
+    color: var(--color-text);
     cursor: pointer;
     display: flex;
     font-size: 16px;
@@ -178,7 +196,7 @@ svg {
 .delete-button svg {
     width: 16px;
     height: 16px;
-    fill: #5865f2;
+    fill: var(--color-primary);
 }
 
 .delete-datetime-button {
@@ -197,26 +215,26 @@ svg {
     top: 10px;
 }
 
-.delete-schedule-link, .remove-link {
-    color: #ff8d80;
+.delete-schedule-link,
+.remove-link {
+    color: var(--color-tertiary);
 }
 
 .disconnected {
-    background: #ff8d80 !important;
+    background: var(--color-tertiary) !important;
 }
 
 .download-link {
     position: absolute;
     top: 10px;
     right: 10px;
-    background: #fff;
-    border: 1px solid #f0f2ff;
+    background: var(--color-background);
+    border: 1px solid var(--color-light-bg);
     border-radius: 50%;
     padding: 5px;
     justify-content: center;
     display: flex;
     align-items: center;
-    justify-content: center;
 }
 
 .editor {
@@ -229,7 +247,7 @@ svg {
 }
 
 .editor[data-placeholder]:empty:before {
-    color: #888;
+    color: var(--color-placeholder);
     content: attr(data-placeholder);
     display: block;
     font-style: italic;
@@ -243,7 +261,7 @@ svg {
 
 .filters {
     align-items: flex-start;
-    border-bottom: 1px solid #5865f2;
+    border-bottom: 1px solid var(--color-primary);
     display: flex;
     justify-content: flex-end;
     margin-top: 20px;
@@ -251,17 +269,17 @@ svg {
 }
 
 .form-button {
-    background: #5865f2;
+    background: var(--color-primary);
     border: none;
-    color: #fff;
+    color: var(--color-background);
     cursor: pointer;
-    font-size: 14px;
+    font-size: var(--font-size-base);
     padding: 10px 20px;
     transition: background-color 0.3s ease;
 }
 
 .form-button:hover {
-    background: #4755d5;
+    background: var(--color-primary-hover);
 }
 
 .form-group {
@@ -271,17 +289,17 @@ svg {
 .form-group input,
 .form-group select,
 .form-group textarea {
-    background: #fff;
-    border: 1px solid #5865f2;
+    background: var(--color-background);
+    border: 1px solid var(--color-primary);
     box-sizing: border-box;
-    color: #000;
+    color: var(--color-text);
     font-size: 12px;
     padding: 10px;
     width: 100%;
 }
 
 .form-group label {
-    color: #5865f2;
+    color: var(--color-primary);
     display: block;
     font-size: 12px;
     font-weight: bold;
@@ -298,7 +316,7 @@ svg {
     position: absolute;
     top: 10px;
     right: 10px;
-    color: white;
+    color: var(--color-text);
     border: none;
     cursor: pointer;
 }
@@ -309,10 +327,10 @@ svg {
 .toggle-button,
 .delete-button {
     align-items: center;
-    background: #fff;
+    background: var(--color-background);
     border: 0;
-    border-right: 1px solid #5865f2;
-    color: #5865f2;
+    border-right: 1px solid var(--color-primary);
+    color: var(--color-primary);
     cursor: pointer;
     display: flex;
     font-size: 12px;
@@ -324,12 +342,12 @@ svg {
 .handle {
     cursor: default;
     padding: 0 10px;
-    border-left: 1px solid #5865f2;
+    border-left: 1px solid var(--color-primary);
     width: auto;
 }
 
 .hook-label {
-    background: #31efb8;
+    background: var(--color-secondary);
     height: 5px;
     left: 0;
     position: absolute;
@@ -338,34 +356,34 @@ svg {
 }
 
 .hook-name {
-    color: #31efb8;
-    font-family: 'robotomono';
+    color: var(--color-secondary);
+    font-family: var(--font-family-mono);
     font-size: 12px;
-    line-height: 1.5em;
+    line-height: var(--line-height-base);
 }
 
 .hook-placement {
-    color: #fff;
-    font-family: 'robotomono';
+    color: var(--color-text);
+    font-family: var(--font-family-mono);
     font-size: 12px;
-    line-height: 1.5em;
+    line-height: var(--line-height-base);
 }
 
 .hook-script {
-    color: #fff;
-    font-family: 'robotomono';
+    color: var(--color-text);
+    font-family: var(--font-family-mono);
     font-size: 12px;
-    line-height: 1.5em;
+    line-height: var(--line-height-base);
     white-space: pre-wrap;
     word-wrap: break-word;
 }
 
 .hook-type {
-    background: #31efb8;
-    color: #060c4d;
+    background: var(--color-secondary);
+    color: var(--color-accent);
     height: 32px;
     padding: 0 10px;
-    font-family: 'robotomono';
+    font-family: var(--font-family-mono);
     font-size: 12px;
     line-height: 32px;
     position: absolute;
@@ -388,8 +406,8 @@ svg {
 
 .hook-type-container .delete-button {
     border: none;
-    border-left: 1px solid #060c4d;
-    background: #31efb8;
+    border-left: 1px solid var(--color-accent);
+    background: var(--color-secondary);
     padding: 0;
     cursor: pointer;
     display: flex;
@@ -419,7 +437,7 @@ svg {
 
 .lightbox-content {
     text-align: center;
-    background: #fff;
+    background: var(--color-background);
     border-radius: 10px;
     position: relative;
     padding: 20px;
@@ -433,16 +451,16 @@ svg {
     max-width: 400px;
     max-height: auto;
     object-fit: contain;
-    border: 1px solid #f0f2ff;
+    border: 1px solid var(--color-light-bg);
     border-radius: 10px;
     display: block;
     margin: 0 auto;
 }
 
 .lightbox-filename {
-    font-family: 'robotomono';
-    font-size: 14px;
-    line-height: 1.5em;
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-base);
     text-align: center;
     word-break: break-all;
     margin-top: 20px;
@@ -450,18 +468,18 @@ svg {
 
 .part-bash .color-label,
 .part-python .color-label {
-    background-color: #5865f2;
+    background-color: var(--color-primary);
     z-index: 1;
 }
 
 .part-bash .eval-label,
 .part-python .eval-label {
-    background-color: #ff8d80;
+    background-color: var(--color-tertiary);
 }
 
 .part-bash .controls,
 .part-python .controls {
-    border-bottom: 1px solid #5865f2;
+    border-bottom: 1px solid var(--color-primary);
     display: flex;
     position: absolute;
     z-index: 2;
@@ -473,11 +491,11 @@ svg {
 .part-python .editor {
     background: none;
     border: none;
-    color: #fff;
-    font-family: 'robotomono';
+    color: var(--color-text);
+    font-family: var(--font-family-mono);
     height: auto;
     font-size: 12px;
-    line-height: 1.5em;
+    line-height: var(--line-height-base);
     min-height: 100px;
     overflow: hidden;
     white-space: pre-wrap;
@@ -488,9 +506,9 @@ svg {
 
 .part-bash,
 .part-python {
-    background: #060c4d;
-    border: 1px solid #5865f2;
-    color: #fff;
+    background: var(--color-accent);
+    border: 1px solid var(--color-primary);
+    color: var(--color-text);
     display: flex;
     flex-direction: column;
     margin: 20px 0;
@@ -535,18 +553,18 @@ svg {
     animation: spin 1s linear infinite;
     border: 10px solid #ffffff;
     border-radius: 50%;
-    border-top: 10px solid #5865f2;
+    border-top: 10px solid var(--color-primary);
     height: 60px;
     width: 60px;
 }
 
 .tab {
-    background: #f0f2ff;
-    border-right: 1px solid #5865f2;
-    border-top: 1px solid #5865f2;
-    color: #5865f2;
+    background: var(--color-light-bg);
+    border-right: 1px solid var(--color-primary);
+    border-top: 1px solid var(--color-primary);
+    color: var(--color-primary);
     cursor: pointer;
-    font-size: 14px;
+    font-size: var(--font-size-base);
     padding: 10px 20px;
 }
 
@@ -562,15 +580,15 @@ svg {
 }
 
 .tab.active {
-    background: #fff;
+    background: var(--color-background);
     border-bottom: none;
     height: calc(100% + 1px);
     top: -1px;
 }
 
 .tabs {
-    border-bottom: 1px solid #5865f2;
-    border-left: 1px solid #5865f2;
+    border-bottom: 1px solid var(--color-primary);
+    border-left: 1px solid var(--color-primary);
     display: flex;
     margin-top: 20px;
 }
@@ -585,17 +603,17 @@ svg {
 }
 
 .teletext-style {
-    font-family: 'robotomono';
-    font-size: 14px;
-    line-height: 1.5em;
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-base);
 }
 
 .toggle-button {
     align-items: center;
-    background: #fff;
+    background: var(--color-background);
     border: 0;
     border-right: 0px;
-    color: #5865f2;
+    color: var(--color-primary);
     cursor: pointer;
     display: flex;
     font-size: 12px;
@@ -605,16 +623,16 @@ svg {
 }
 
 .toggle-button svg {
-    fill: #5865f2;
+    fill: var(--color-primary);
     height: 16px;
     width: 16px;
 }
 
 .widget {
-    border: 1px solid #5865f2;
-    font-family: 'robotomono';
+    border: 1px solid var(--color-primary);
+    font-family: var(--font-family-mono);
     font-size: 12px;
-    line-height: 1.5em;
+    line-height: var(--line-height-base);
     padding: 20px;
     margin: 20px 0;
 }
@@ -632,10 +650,10 @@ svg {
 /* ID selectors */
 #abort-build-button {
     margin-top: 20px;
-    font-size: 14px;
+    font-size: var(--font-size-base);
     padding: 10px 20px;
-    background: #5865f2;
-    color: #fff;
+    background: var(--color-primary);
+    color: var(--color-background);
     border: none;
     cursor: pointer;
 }
@@ -643,39 +661,39 @@ svg {
 #add-bash-button,
 #add-python-button,
 #save-button {
-    background: #5865f2;
+    background: var(--color-primary);
     border: none;
-    color: #fff;
+    color: var(--color-background);
     cursor: pointer;
-    font-size: 14px;
+    font-size: var(--font-size-base);
     padding: 10px 20px;
 }
 
 #add-bash-button,
 #add-python-button {
-    background: #060c4d;
+    background: var(--color-accent);
 }
 
 #add-datetime {
-    background: #060c4d;
+    background: var(--color-accent);
     border: none;
-    color: #fff;
+    color: var(--color-background);
     cursor: pointer;
-    font-size: 14px;
+    font-size: var(--font-size-base);
     padding: 10px 20px;
     margin-bottom: 20px;
 }
 
 #add-hook-form {
-    background: #f0f2ff;
-    border: 1px solid #5865f2;
+    background: var(--color-light-bg);
+    border: 1px solid var(--color-primary);
     padding: 20px;
     margin-bottom: 20px;
 }
 
 #add-hook-form h3 {
-    color: #5865f2;
-    font-size: 14px;
+    color: var(--color-primary);
+    font-size: var(--font-size-base);
     line-height: 1;
     margin-bottom: 20px;
 }
@@ -685,16 +703,16 @@ svg {
 }
 
 #api-key-authorize {
-    background: #5865f2;
+    background: var(--color-primary);
     border: none;
-    color: #fff;
+    color: var(--color-background);
     cursor: pointer;
-    font-size: 14px;
+    font-size: var(--font-size-base);
     padding: 10px 20px;
 }
 
 #api-key-input {
-    border: 1px solid #5865f2;
+    border: 1px solid var(--color-primary);
     box-sizing: border-box;
     display: block;
     margin: 0 auto 20px;
@@ -716,7 +734,7 @@ svg {
 }
 
 #api-key-modal-content {
-    background: #fff;
+    background: var(--color-background);
     box-sizing: border-box;
     margin-left: 20px;
     margin-right: 20px;
@@ -746,13 +764,13 @@ svg {
     height: 100%;
     padding: 20px;
     padding-bottom: 84px;
-    background: #f0f2ff;
-    border-left: 1px solid #5865f2;
+    background: var(--color-light-bg);
+    border-left: 1px solid var(--color-primary);
     overflow-y: auto;
 }
 
 #comment-sidebar h2 {
-    color: #5865f2;
+    color: var(--color-primary);
 }
 
 #cron-labels {
@@ -761,10 +779,10 @@ svg {
 
 #cron-widget input[type="text"],
 #cron-widget input[type="datetime-local"] {
-    background: #fff;
-    border: 1px solid #5865f2;
+    background: var(--color-background);
+    border: 1px solid var(--color-primary);
     box-sizing: border-box;
-    color: #000;
+    color: var(--color-text);
     font-size: 12px;
     padding: 10px;
     margin-bottom: 20px;
@@ -772,7 +790,7 @@ svg {
 }
 
 #datetime-list {
-    border: 1px solid #060c4d;
+    border: 1px solid var(--color-accent);
     list-style-type: none;
     margin-bottom: 20px;
     padding: 10px;
@@ -797,13 +815,13 @@ svg {
 }
 
 #footer {
-    font-size: 14px;
+    font-size: var(--font-size-base);
     margin-bottom: 20px;
     text-align: center;
 }
 
 #heartbeat-dot {
-    background: #ff8d80;
+    background: var(--color-tertiary);
     border-radius: 50%;
     display: inline-block;
     width: 10px;
@@ -817,14 +835,15 @@ svg {
 }
 
 #heartbeat-time {
+    color: #ffffff;
     width: 55px;
 }
 
 #hooks,
 #log,
 #wrapper {
-    background: #fff;
-    border: 1px solid #5865f2;
+    background: var(--color-background);
+    border: 1px solid var(--color-primary);
     border-top: 0;
     margin: 0 auto 20px;
     max-width: 800px;
@@ -840,8 +859,8 @@ svg {
 }
 
 #hooks-list li {
-    background: #060c4d;
-    border: 1px solid #31efb8;
+    background: var(--color-accent);
+    border: 1px solid var(--color-secondary);
     display: flex;
     flex-direction: column;
     margin-bottom: 20px;
@@ -876,8 +895,8 @@ svg {
 }
 
 #log-dropdown {
-    background: #f0f2ff;
-    border: 1px solid #5865f2;
+    background: var(--color-light-bg);
+    border: 1px solid var(--color-primary);
     display: block;
     margin-bottom: 20px;
     font-size: 12px;
@@ -886,19 +905,19 @@ svg {
 }
 
 #log-output {
-    background: #fff;
-    border: 1px solid #5865f2;
-    color: #000;
-    font-family: 'robotomono';
+    background: var(--color-background);
+    border: 1px solid var(--color-primary);
+    color: var(--color-text);
+    font-family: var(--font-family-mono);
     font-size: 12px;
-    line-height: 1.5em;
+    line-height: var(--line-height-base);
     padding: 20px;
 }
 
 #input-hooks {
-    font-family: 'robotomono';
-    font-size: 14px;
-    line-height: 1.5em;
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-base);
     background: #eafdf8;
     padding: 20px;
 }
@@ -920,7 +939,7 @@ svg {
     flex-direction: column;
     align-items: center;
     text-align: center;
-    background-color: #fff;
+    background-color: var(--color-background);
     overflow: hidden;
     cursor: pointer;
 }
@@ -941,7 +960,7 @@ svg {
     height: auto;
     object-fit: contain;
     object-position: center;
-    border: 1px solid #f0f2ff;
+    border: 1px solid var(--color-light-bg);
     border-radius: 10px;
 }
 
@@ -950,17 +969,17 @@ svg {
     height: 100%;
     object-fit: cover;
     object-position: center;
-    border: 1px solid #f0f2ff;
+    border: 1px solid var(--color-light-bg);
     border-radius: 10px;
 }
 
 #output-widget {
-    color: #fff;
-    background: #5865f2;
+    color: var(--color-text);
+    background: var(--color-primary);
     border: 0px;
-    font-family: 'robotomono';
-    font-size: 14px;
-    line-height: 1.5em;
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-base);
     position: relative;
     max-height: 200px;
     overflow: scroll;
@@ -973,7 +992,7 @@ svg {
     width: 100vw;
     height: 100vh;
     max-height: 100vh;
-    background-color: white;
+    background-color: var(--color-background);
     z-index: 2147483646;
     margin-top: 0px;
     padding: 20px;
@@ -993,9 +1012,9 @@ svg {
 
 #output-widget.text-file-output {
     border: 0px;
-    color: #fff;
-    background: #5865f2;
-    font-size: 14px;
+    color: #ffffff;
+    background: var(--color-primary);
+    font-size: var(--font-size-base);
 }
 
 #save-button {
@@ -1004,11 +1023,11 @@ svg {
 }
 
 #save-schedule {
-    background: #5865f2;
+    background: var(--color-primary);
     border: none;
-    color: #fff;
+    color: var(--color-background);
     cursor: pointer;
-    font-size: 14px;
+    font-size: var(--font-size-base);
     padding: 10px 20px;
 }
 
@@ -1017,7 +1036,7 @@ svg {
 }
 
 #server-time {
-    font-size: 14px;
+    font-size: var(--font-size-base);
 }
 
 #status-bar {
@@ -1030,18 +1049,18 @@ svg {
 }
 
 #status-bar.error {
-    background: #ff8d80;
-    color: #000;
+    background: var(--color-tertiary);
+    color: var(--color-text);
 }
 
 #status-bar.success {
-    background: #31efb8;
-    color: #000;
+    background: var(--color-secondary);
+    color: #000000;
 }
 
 #toggle-comments-btn {
     background: transparent;
-    border: 1px solid #31efb8;
+    border: 1px solid var(--color-secondary);
     cursor: pointer;
     width: 32px;
     height: 32px;
@@ -1068,8 +1087,8 @@ svg {
     position: fixed;
     z-index: 2147483645;
     align-items: center;
-    background: #060c4d;
-    color: #fff;
+    background: var(--color-accent);
+    color: #ffffff;
     display: flex;
     justify-content: space-between;
     padding: 20px;
@@ -1077,7 +1096,7 @@ svg {
 }
 
 #toolbar a {
-    color: #fff;
+    color: #ffffff;
 }
 
 #toolbar h1 {
@@ -1108,7 +1127,6 @@ svg {
     .tabs {
         border-left: 0px;
     }
-
 }
 
 /* Keyframes */
@@ -1128,5 +1146,50 @@ svg {
 
     100% {
         transform: rotate(360deg);
+    }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --color-background: #000000;
+        --color-text: #ffffff;
+        --color-light-bg: #060c4d;
+        --color-dark-bg: #ffffff;
+        --color-placeholder: #bbbbbb;
+    }
+
+    button {
+        color: var(--color-text) !important;
+    }
+
+    select {
+        color: var(--color-text);
+    }
+
+    #api-key-input {
+        background: var(--color-light-bg);
+        color: var(--color-text);
+    }
+
+    #api-key-input::placeholder {
+        color: var(--color-primary);
+    }
+
+    #api-key-modal-content {
+        border: 1px solid var(--color-primary);
+    }
+
+    #input-hooks {
+        background: var(--color-light-bg);
+        color: var(--color-text);
+    }
+
+    #media-list-container .gallery-item .media-container video {
+        border: 1px solid var(--color-primary);
+    }
+
+    #media-list-container .gallery-item img {
+        border: 1px solid var(--color-primary);
     }
 }
