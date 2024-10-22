@@ -86,18 +86,31 @@ async function abortBuild(apiToken) {
         }
 
         const response = await callAPI('abort-build', apiToken, 'POST');
-        if (response.message === "Build process aborted successfully.") {
-            showStatus('Build process aborted.', false);
-            stopBuildStatusCheck();
-            hideLoadingOverlay();
-            enableInteractions();
-            exitFullscreen();
+
+        console.log('Abort build response:', response);
+
+        if (response && response.message) {
+            if (response.message === "Build process forcefully terminated.") {
+                showStatus('Build process aborted.', true);
+                stopBuildStatusCheck();
+                hideLoadingOverlay();
+                enableInteractions();
+                exitFullscreen();
+            } else if (response.message === "Attempted force abort with errors.") {
+                showStatus('Build aborted with some errors.', false);
+                stopBuildStatusCheck();
+                hideLoadingOverlay();
+                enableInteractions();
+                exitFullscreen();
+            } else {
+                showStatus(response.message, false);
+            }
         } else {
-            showStatus('Failed to abort build process.', false);
+            showStatus('Invalid response from server', false);
         }
     } catch (error) {
         console.error('Error aborting build:', error);
-        showStatus('Error aborting build process.', false);
+        showStatus(`Error aborting build: ${error.message}`, false);
     }
 }
 
