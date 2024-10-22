@@ -974,7 +974,6 @@ async function fetchEvalData() {
         if (evalWidget) {
             evalWidget.innerHTML = `<p>Could not load eval_data.json: ${escapeHTML(error.message)}</p>`;
         }
-        showStatus(`Error fetching eval data: ${error.message}`, false);
     } finally {
         isFetchingEvalData = false;
     }
@@ -2141,6 +2140,15 @@ async function updateExistingHook(hookId, newHook) {
     }
 }
 
+let quotes = [
+    "In the midst of chaos, there is also opportunity. - Sun Tzu"
+];
+
+function getRandomQuote() {
+    if (quotes.length === 0) return "Loading...";
+    return quotes[Math.floor(Math.random() * quotes.length)];
+}
+
 async function validateAndInitialize(apiToken) {
     const apiKeyModalElement = document.getElementById('api-key-modal');
     if (apiKeyModalElement) {
@@ -2149,7 +2157,7 @@ async function validateAndInitialize(apiToken) {
         console.warn('API key modal element not found.');
     }
 
-    showLoadingOverlay('Validating token and initializing...');
+    showLoadingOverlay(getRandomQuote());
 
     try {
         if (typeof apiToken !== 'string' || apiToken.trim() === '') {
@@ -2558,5 +2566,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     checkDatetimeListEmpty();
-    await fetchSchedule();
 });
