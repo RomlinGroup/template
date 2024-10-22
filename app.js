@@ -677,6 +677,11 @@ async function deleteHook(hookId) {
 }
 
 async function deleteScheduleEntry(scheduleId, datetimeIndex = null) {
+    if (!isAuthenticated()) {
+        showStatus('Please authenticate before deleting schedules.', false);
+        return;
+    }
+
     const apiToken = localStorage.getItem('apiToken');
     const csrfToken = localStorage.getItem('csrfToken');
 
@@ -1026,12 +1031,18 @@ async function fetchLogFiles(apiToken) {
     }
 }
 
-async function fetchSchedule() {
+function isAuthenticated() {
     const apiToken = localStorage.getItem('apiToken');
+    return !!apiToken;
+}
 
-    if (!apiToken) {
+async function fetchSchedule() {
+    if (!isAuthenticated()) {
+        console.debug('Schedule fetch attempted before authentication');
         return;
     }
+
+    const apiToken = localStorage.getItem('apiToken');
 
     try {
         const data = await callAPI('schedule', apiToken, 'GET');
@@ -1909,6 +1920,11 @@ async function saveFile(status = false, apiToken) {
 }
 
 async function sendScheduleToServer(scheduleData) {
+    if (!isAuthenticated()) {
+        showStatus('Please authenticate before scheduling.', false);
+        return;
+    }
+
     const apiToken = localStorage.getItem('apiToken');
     const csrfToken = localStorage.getItem('csrfToken');
 
@@ -2126,16 +2142,29 @@ async function updateExistingHook(hookId, newHook) {
 }
 
 async function validateAndInitialize(apiToken) {
+    const apiKeyModalElement = document.getElementById('api-key-modal');
+    if (apiKeyModalElement) {
+        apiKeyModalElement.style.display = 'none';
+    } else {
+        console.warn('API key modal element not found.');
+    }
+
+    showLoadingOverlay('Validating token and initializing...');
+
     try {
         if (typeof apiToken !== 'string' || apiToken.trim() === '') {
             console.error('No API token provided.');
             showStatus('Please enter a valid API token.', false);
+            hideLoadingOverlay();
+            if (apiKeyModalElement) apiKeyModalElement.style.display = 'flex';
             return false;
         }
 
         if (typeof callAPI !== 'function') {
             console.error('callAPI function is not defined.');
             showStatus('Internal error: Unable to validate API token.', false);
+            hideLoadingOverlay();
+            if (apiKeyModalElement) apiKeyModalElement.style.display = 'flex';
             return false;
         }
 
@@ -2147,33 +2176,55 @@ async function validateAndInitialize(apiToken) {
             } catch (storageError) {
                 console.error('Failed to store API token in localStorage:', storageError);
                 showStatus('Error storing API token. Please check your browser settings.', false);
+                hideLoadingOverlay();
+                if (apiKeyModalElement) apiKeyModalElement.style.display = 'flex';
                 return false;
             }
 
             if (typeof initializeApp !== 'function') {
                 console.error('initializeApp function is not defined.');
                 showStatus('Internal error: Unable to initialize the application.', false);
+                hideLoadingOverlay();
+                if (apiKeyModalElement) apiKeyModalElement.style.display = 'flex';
                 return false;
             }
 
-            await initializeApp(apiToken);
+            try {
+                await new Promise((resolve, reject) => {
+                    if (window.monaco) {
+                        resolve();
+                    } else {
+                        window.require.config({paths: {'vs': 'node_modules/monaco-editor/min/vs'}});
+                        window.require(['vs/editor/editor.main'], () => {
+                            if (window.monaco) {
+                                resolve();
+                            } else {
+                                reject(new Error('Monaco editor failed to initialize'));
+                            }
+                        });
+                    }
+                });
 
-            const apiKeyModalElement = document.getElementById('api-key-modal');
+                await initializeApp(apiToken);
+                hideLoadingOverlay();
+                return true;
 
-            if (apiKeyModalElement) {
-                apiKeyModalElement.style.display = 'none';
-            } else {
-                console.warn('API key modal element not found.');
+            } catch (monacoError) {
+                console.error('Failed to initialize Monaco editor:', monacoError);
+                showStatus('Failed to initialize code editor. Please refresh the page.', false);
+                hideLoadingOverlay();
+                if (apiKeyModalElement) apiKeyModalElement.style.display = 'flex';
+                return false;
             }
-
-            return true;
         } else {
             const errorMessage = response && response.message ? response.message : 'Unknown error';
             localStorage.removeItem('apiToken');
+            showStatus(`Invalid API token: ${errorMessage}`, false);
+            hideLoadingOverlay();
+            if (apiKeyModalElement) apiKeyModalElement.style.display = 'flex';
             return false;
         }
     } catch (error) {
-
         if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
             showStatus('Network error. Please check your connection and try again.', false);
         } else if (error.message && error.message.includes('401')) {
@@ -2181,8 +2232,9 @@ async function validateAndInitialize(apiToken) {
         } else {
             showStatus(`Failed to validate API token. ${error.message}`, false);
         }
-
         localStorage.removeItem('apiToken');
+        hideLoadingOverlay();
+        if (apiKeyModalElement) apiKeyModalElement.style.display = 'flex';
         return false;
     }
 }
