@@ -1380,7 +1380,11 @@ async function listMediaFiles() {
         if (response.files && Array.isArray(response.files)) {
             if (response.files.length > 0) {
                 mediaListContainer.style.display = 'block';
-                mediaListContainer.innerHTML = '<div class="gallery"></div>';
+                mediaListContainer.innerHTML = `
+                    <div class="media-count">Media files: ${response.files.length}</div>
+                    <div class="gallery"></div>
+                `;
+                
                 const gallery = mediaListContainer.querySelector('.gallery');
 
                 response.files.forEach(file => {

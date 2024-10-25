@@ -466,6 +466,12 @@ textarea {
     margin-top: 20px;
 }
 
+.media-count {
+    font-family: var(--font-family-mono);
+    margin-bottom: 20px;
+    text-align: right;
+}
+
 .part-bash .color-label,
 .part-python .color-label {
     background-color: var(--color-primary);
