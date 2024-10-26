@@ -259,6 +259,12 @@ textarea {
     align-items: flex-start;
 }
 
+.filename {
+    position: absolute;
+    font-family: var(--font-family-mono);
+    font-size: 14px;
+}
+
 .filters {
     align-items: flex-start;
     border-bottom: 1px solid var(--color-primary);
@@ -421,6 +427,21 @@ textarea {
     height: 16px;
 }
 
+.latest-media-lightbox {
+    position: fixed;
+    inset: 0;
+    background: #000000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 2147483647;
+}
+
+.latest-media-lightbox .close-lightbox {
+    border: 0px;
+}
+
 .lightbox {
     position: fixed;
     top: 0;
@@ -466,9 +487,22 @@ textarea {
     margin-top: 20px;
 }
 
+.media-button {
+    background: #060c4d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    margin: 10px 0;
+    cursor: pointer;
+}
+
+.media-button:hover {
+    background: #0a1266;
+}
+
 .media-count {
     font-family: var(--font-family-mono);
-    margin-bottom: 20px;
     text-align: right;
 }
 
@@ -826,6 +860,13 @@ textarea {
     text-align: center;
 }
 
+#gallery-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
 #heartbeat-dot {
     background: var(--color-tertiary);
     border-radius: 50%;
@@ -878,6 +919,13 @@ textarea {
 
 #hooks-list li:last-of-type {
     margin-bottom: 0px;
+}
+
+#latest-media-button {
+    float: left;
+    cursor: pointer;
+    font-family: var(--font-family-mono);
+    font-size: 14px;
 }
 
 #loading-overlay {

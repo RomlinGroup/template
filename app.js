@@ -414,7 +414,7 @@ function checkAndRestoreBuildStatus() {
 
 async function checkApiTokenValidity(apiToken) {
     try {
-        const response = await callAPI('validate_token', apiToken, 'GET');
+        const response = await callAPI('validate-token', apiToken, 'GET');
         return response.valid;
     } catch (error) {
         console.error('Error checking API token:', error);
@@ -754,6 +754,125 @@ function displayAudioFile(file, container) {
     audioElement.controls = true;
     audioElement.autoplay = false;
     audioElement.src = `${file.public}?cb=${timestamp}`;
+}
+
+function displayLatestMediaLightbox() {
+    const existingLightbox = document.querySelector('.latest-media-lightbox');
+    if (existingLightbox) {
+        existingLightbox.remove();
+    }
+
+    const lightbox = document.createElement('div');
+    lightbox.className = 'latest-media-lightbox';
+
+    const closeButton = document.createElement('button');
+    closeButton.className = 'close-lightbox';
+
+    closeButton.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+            <path d="M1 1h1v1h-1zM2 1h1v1h-1zM13 1h1v1h-1zM14 1h1v1h-1zM1 2h1v1h-1zM2 2h1v1h-1zM13 2h1v1h-1zM14 2h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM11 3h1v1h-1zM12 3h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM9 6h1v1h-1zM10 6h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM9 9h1v1h-1zM10 9h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM3 11h1v1h-1zM4 11h1v1h-1zM11 11h1v1h-1zM12 11h1v1h-1zM3 12h1v1h-1zM4 12h1v1h-1zM11 12h1v1h-1zM12 12h1v1h-1zM1 13h1v1h-1zM2 13h1v1h-1zM13 13h1v1h-1zM14 13h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1z" fill="#ffffff"/>
+        </svg>
+    `;
+
+    const mediaContainer = document.createElement('div');
+    mediaContainer.className = 'media-container';
+    mediaContainer.style.cssText = 'flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; padding: 20px;';
+
+    const filename = document.createElement('div');
+    filename.className = 'filename';
+    filename.style.cssText = 'color: white; text-align: center;';
+
+    lightbox.appendChild(closeButton);
+    lightbox.appendChild(mediaContainer);
+    lightbox.appendChild(filename);
+
+    document.body.appendChild(lightbox);
+
+    let interval;
+    let currentFileName = '';
+
+    const closeLightbox = () => {
+        if (interval) {
+            clearInterval(interval);
+        }
+        lightbox.remove();
+    };
+
+    closeButton.onclick = closeLightbox;
+
+    lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox) {
+            closeLightbox();
+        }
+    });
+
+    async function updateLatestMedia() {
+        try {
+            const response = await callAPI('list-media-files', localStorage.getItem('apiToken'), 'GET');
+
+            if (response.files && response.files.length > 0) {
+                const sortedFiles = response.files.sort((a, b) => {
+                    const aTime = a.name.match(/\d+/)?.[0] || 0;
+                    const bTime = b.name.match(/\d+/)?.[0] || 0;
+                    return bTime - aTime;
+                });
+
+                const latestFile = sortedFiles[0];
+
+                if (currentFileName !== latestFile.name) {
+                    currentFileName = latestFile.name;
+                    const fileExtension = latestFile.name.split('.').pop().toLowerCase();
+                    const timestamp = Date.now();
+
+                    mediaContainer.innerHTML = '';
+                    filename.textContent = latestFile.name;
+
+                    if (['gif', 'jpg', 'jpeg', 'png'].includes(fileExtension)) {
+                        const img = document.createElement('img');
+
+                        img.src = `/output/${latestFile.name}?cb=${timestamp}`;
+                        img.alt = latestFile.name;
+
+                        mediaContainer.appendChild(img);
+                    } else if (['mp4'].includes(fileExtension)) {
+                        const videoContainer = document.createElement('div');
+
+                        const video = document.createElement('video');
+
+                        video.controls = true;
+                        video.autoplay = true;
+                        video.style.cssText = `
+                            max-width: 90%;
+                            max-height: 80vh;
+                            width: auto;
+                            height: auto;
+                            display: block;
+                            margin: auto;
+                        `;
+
+                        const source = document.createElement('source');
+                        source.src = `/output/${latestFile.name}?cb=${timestamp}`;
+                        source.type = 'video/mp4';
+
+                        video.appendChild(source);
+                        videoContainer.appendChild(video);
+                        mediaContainer.appendChild(videoContainer);
+                    }
+                }
+            } else {
+                mediaContainer.innerHTML = '<div style="color: white;">No media files available</div>';
+            }
+        } catch (error) {
+            console.error('Error fetching latest media:', error);
+            mediaContainer.innerHTML = '<div style="color: white;">Error loading media</div>';
+        }
+    }
+
+    updateLatestMedia();
+
+    interval = setInterval(updateLatestMedia, 5000);
+
+    window.addEventListener('beforeunload', closeLightbox);
 }
 
 function displayLightbox(mediaSrc) {
@@ -1366,7 +1485,7 @@ async function initializeApp(apiToken) {
 
 async function listMediaFiles() {
     try {
-        const response = await callAPI('list_media_files', localStorage.getItem('apiToken'), 'GET');
+        const response = await callAPI('list-media-files', localStorage.getItem('apiToken'), 'GET');
         const mediaListContainer = document.getElementById('media-list-container');
 
         if (!mediaListContainer) {
@@ -1381,10 +1500,16 @@ async function listMediaFiles() {
             if (response.files.length > 0) {
                 mediaListContainer.style.display = 'block';
                 mediaListContainer.innerHTML = `
-                    <div class="media-count">Media files: ${response.files.length}</div>
+                    <div id="gallery-header">
+                        <div id="latest-media-button">Play</div>
+                        <div class="media-count">Media: ${response.files.length}</div>
+                    </div>
+                    
                     <div class="gallery"></div>
                 `;
-                
+
+                document.getElementById('latest-media-button')?.addEventListener('click', displayLatestMediaLightbox);
+
                 const gallery = mediaListContainer.querySelector('.gallery');
 
                 response.files.forEach(file => {
@@ -1477,7 +1602,7 @@ async function loadEvalAndOutputFiles(apiToken) {
 
 async function loadDefaultFile(apiToken) {
     try {
-        const json = await callAPI('load_file', apiToken, 'GET', {filename: 'custom.json'});
+        const json = await callAPI('load-file', apiToken, 'GET', {filename: 'custom.json'});
 
         if (json && json.content) {
             const base64Content = json.content;
@@ -1917,7 +2042,7 @@ async function saveFile(status = false, apiToken) {
         const csrfToken = localStorage.getItem('csrfToken');
         const headers = {'X-CSRF-Token': csrfToken};
 
-        const response = await callAPI('save_file', apiToken, 'POST', formData, headers);
+        const response = await callAPI('save-file', apiToken, 'POST', formData, headers);
 
         if (response.message === "File saved successfully!") {
             showStatus('Saved successfully!', true);
@@ -2193,7 +2318,7 @@ async function validateAndInitialize(apiToken) {
             return false;
         }
 
-        const response = await callAPI('validate_token', apiToken, 'POST', {api_token: apiToken});
+        const response = await callAPI('validate-token', apiToken, 'POST', {api_token: apiToken});
 
         if (response && response.message === 'API token is valid.') {
             try {
@@ -2353,6 +2478,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             abortBuild();
         });
     }
+
+    document.getElementById('latest-media-button')?.addEventListener('click', displayLatestMediaLightbox);
 
     const debouncedInitialization = debounce(async (apiToken) => {
         try {
