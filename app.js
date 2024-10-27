@@ -1357,6 +1357,111 @@ function highlightBlock(blockId) {
     }
 }
 
+function initializeHookScriptEditor() {
+    const hookScriptContainer = document.getElementById('hook-script');
+    if (!hookScriptContainer) {
+        console.error('Hook script container not found');
+        return;
+    }
+
+    if (window.hookScriptEditor) {
+        const editor = window.hookScriptEditor;
+        setTimeout(() => {
+            editor.layout();
+            const contentHeight = Math.max(200, Math.min(600, editor.getContentHeight()));
+            hookScriptContainer.style.height = `${contentHeight}px`;
+        }, 0);
+        return;
+    }
+
+    hookScriptContainer.innerHTML = '';
+    hookScriptContainer.style.backgroundColor = '#060c4d';
+    hookScriptContainer.classList.add('editor-loading');
+
+    monaco.editor.defineTheme('flatpack', {
+        base: 'vs-dark',
+        colors: {
+            'editor.background': '#060c4d',
+            'editor.lineHighlightBackground': '#080f61'
+        },
+        inherit: true,
+        rules: [
+            {token: '', background: '060c4d', foreground: 'ffffff'},
+            {token: 'comment', foreground: 'cccccc', fontStyle: 'italic'},
+            {token: 'keyword', foreground: '31efb8'}
+        ]
+    });
+
+    monaco.editor.setTheme('flatpack');
+
+    const editor = monaco.editor.create(hookScriptContainer, {
+        accessibilitySupport: 'off',
+        autoIndent: 'advanced',
+        automaticLayout: true,
+        bracketPairColorization: {
+            enabled: true
+        },
+        hideCursorInOverviewRuler: true,
+        language: 'python',
+        minimap: {
+            enabled: false
+        },
+        overviewRulerBorder: false,
+        overviewRulerLanes: 0,
+        padding: {
+            top: 25,
+            bottom: 20
+        },
+        scrollBeyondLastColumn: 0,
+        scrollBeyondLastLine: false,
+        scrollbar: {
+            horizontal: 'hidden',
+            vertical: 'hidden'
+        },
+        showUnused: true,
+        smoothScrolling: true,
+        stickyScroll: {
+            enabled: false
+        },
+        theme: 'flatpack',
+        unusualLineTerminators: 'auto',
+        value: '',
+        wordWrap: 'on',
+        wrappingIndent: 'same',
+        wrappingStrategy: 'advanced'
+    });
+
+    window.hookScriptEditor = editor;
+
+    const updateHeight = () => {
+        const contentHeight = Math.max(200, Math.min(600, editor.getContentHeight()));
+        hookScriptContainer.style.height = `${contentHeight}px`;
+        editor.layout();
+    };
+
+    editor.onDidContentSizeChange(updateHeight);
+    updateHeight();
+
+    hookScriptContainer.classList.remove('editor-loading');
+}
+
+document.querySelector('.tab[data-tab="hooks"]').addEventListener('click', () => {
+    const hookScriptContainer = document.getElementById('hook-script');
+
+    if (hookScriptContainer) {
+        hookScriptContainer.style.backgroundColor = '#060c4d';
+    }
+
+    if (window.monaco) {
+        initializeHookScriptEditor();
+    } else {
+        require.config({paths: {'vs': 'node_modules/monaco-editor/min/vs'}});
+        require(['vs/editor/editor.main'], () => {
+            initializeHookScriptEditor();
+        });
+    }
+});
+
 function initializeMonacoEditorForExistingBlocks() {
     const blocks = document.querySelectorAll('.part-python, .part-bash');
 
@@ -2414,7 +2519,7 @@ document.getElementById('hook-form').addEventListener('submit', async function (
     const hookName = document.getElementById('hook-name').value.trim();
     const hookType = document.getElementById('hook-type').value;
     const hookPlacement = document.getElementById('hook-placement').value.trim();
-    const hookScript = document.getElementById('hook-script').value.trim();
+    const hookScript = window.hookScriptEditor ? window.hookScriptEditor.getValue().trim() : '';
 
     if (hookName && hookType && hookScript) {
         try {
@@ -2480,6 +2585,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     document.getElementById('latest-media-button')?.addEventListener('click', displayLatestMediaLightbox);
+
+    if (document.querySelector('.tab[data-tab="hooks"]')) {
+        document.querySelector('.tab[data-tab="hooks"]').addEventListener('click', () => {
+            setActiveTab(document.querySelector('.tab[data-tab="hooks"]'));
+
+            const hookScriptContainer = document.getElementById('hook-script');
+            if (hookScriptContainer) {
+                hookScriptContainer.style.backgroundColor = '#060c4d';
+            }
+
+            if (window.monaco) {
+                initializeHookScriptEditor();
+            } else {
+                require.config({paths: {'vs': 'node_modules/monaco-editor/min/vs'}});
+                require(['vs/editor/editor.main'], () => {
+                    initializeHookScriptEditor();
+                });
+            }
+        });
+    }
+
+    const hookTypeSelect = document.getElementById('hook-type');
+
+    if (hookTypeSelect) {
+        hookTypeSelect.addEventListener('change', function (e) {
+            if (window.hookScriptEditor) {
+                const currentValue = window.hookScriptEditor.getValue();
+                monaco.editor.setModelLanguage(
+                    window.hookScriptEditor.getModel(),
+                    e.target.value === 'python' ? 'python' : 'shell'
+                );
+                window.hookScriptEditor.setValue(currentValue);
+            }
+        });
+    }
 
     const debouncedInitialization = debounce(async (apiToken) => {
         try {
@@ -2582,7 +2722,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Editor tab element not found.');
     }
     if (hooksTab) {
-        hooksTab.addEventListener('click', () => setActiveTab(hooksTab));
+        hooksTab.addEventListener('click', () => {
+            setActiveTab(hooksTab);
+            if (window.monaco) {
+                initializeHookScriptEditor();
+            } else {
+                window.require.config({paths: {'vs': 'node_modules/monaco-editor/min/vs'}});
+                window.require(['vs/editor/editor.main'], () => {
+                    initializeHookScriptEditor();
+                });
+            }
+        });
     } else {
         console.error('Hooks tab element not found.');
     }
@@ -2604,6 +2754,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     setActiveTab(initialTab);
+
+    window.require.config({paths: {'vs': 'node_modules/monaco-editor/min/vs'}});
+
+    window.require(['vs/editor/editor.main'], () => {
+        if (document.querySelector('.tab[data-tab="hooks"]').classList.contains('active')) {
+            initializeHookScriptEditor();
+        }
+    });
 
     setScheduleType('manual');
 
@@ -2632,6 +2790,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const addDatetimeBtn = document.getElementById('add-datetime');
+
     if (addDatetimeBtn) {
         addDatetimeBtn.addEventListener('click', () => {
             const datetimeInput = document.getElementById('manual-datetime');
