@@ -2033,6 +2033,7 @@ function renderHooks(hooks) {
     }
 
     const list = document.createElement('ul');
+
     hooks.forEach(hook => {
         const listItem = document.createElement('li');
 
@@ -2065,6 +2066,10 @@ function renderHooks(hooks) {
         hookNameElement.className = 'hook-name';
         hookNameElement.innerHTML = `@${hook.hook_name || 'undefined'}`;
 
+        const hookShowOnFrontpageElement = document.createElement('div');
+        hookShowOnFrontpageElement.className = 'hook-show-on-frontpage';
+        hookShowOnFrontpageElement.textContent = 'show_on_frontpage: ' + hook.show_on_frontpage || 'undefined';
+
         const hookPlacementElement = document.createElement('div');
         hookPlacementElement.className = 'hook-placement';
         hookPlacementElement.textContent = '-> ' + hook.hook_placement || 'undefined';
@@ -2076,6 +2081,7 @@ function renderHooks(hooks) {
         listItem.appendChild(hookLabelElement);
         listItem.appendChild(hookTypeContainer);
         listItem.appendChild(hookNameElement);
+        listItem.appendChild(hookShowOnFrontpageElement);
         listItem.appendChild(hookPlacementElement);
         listItem.appendChild(hookScriptElement);
 
@@ -2520,6 +2526,7 @@ document.getElementById('hook-form').addEventListener('submit', async function (
     const hookType = document.getElementById('hook-type').value;
     const hookPlacement = document.getElementById('hook-placement').value.trim();
     const hookScript = window.hookScriptEditor ? window.hookScriptEditor.getValue().trim() : '';
+    const showOnFrontpage = document.getElementById('show-on-frontpage').checked;
 
     if (hookName && hookType && hookScript) {
         try {
@@ -2534,7 +2541,8 @@ document.getElementById('hook-form').addEventListener('submit', async function (
                     hook_name: hookName,
                     hook_type: hookType,
                     hook_placement: hookPlacement,
-                    hook_script: hookScript
+                    hook_script: hookScript,
+                    show_on_frontpage: showOnFrontpage
                 })
             });
 
@@ -2561,6 +2569,40 @@ document.getElementById('hook-form').addEventListener('submit', async function (
         showStatus('Please fill in all fields.', false);
     }
 });
+
+async function updateExistingHook(hookId, newHook) {
+    const apiToken = localStorage.getItem('apiToken');
+    const csrfToken = localStorage.getItem('csrfToken');
+
+    try {
+        const response = await fetch(`${getBaseUrl()}/api/hooks/${hookId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiToken}`,
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({
+                hook_name: newHook.hook_name,
+                hook_type: newHook.hook_type,
+                hook_placement: newHook.hook_placement,
+                hook_script: newHook.hook_script,
+                show_on_frontpage: newHook.show_on_frontpage
+            })
+        });
+
+        if (response.ok) {
+            await fetchHooks(apiToken);
+            showStatus('Hook updated successfully!', true);
+        } else {
+            const data = await response.json();
+            showStatus(`Error updating hook: ${data.detail}`, false);
+        }
+    } catch (error) {
+        console.error('Error updating hook:', error);
+        showStatus(`Error: ${error.message}`, false);
+    }
+}
 
 window.addEventListener('resize', resizeAllTextareas);
 
