@@ -1115,6 +1115,138 @@ async function fetchHooks(apiToken) {
     try {
         const data = await callAPI('hooks', apiToken, 'GET');
         renderHooks(data.hooks);
+
+        const frontpageHooks = getFrontpageHooks(data.hooks);
+        const inputHooksDiv = document.getElementById('input-hooks');
+        inputHooksDiv.innerHTML = '';
+
+        const updateIconSvg = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                <path d="M0 0h1v1h-1zM1 0h1v1h-1zM2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM7 0h1v1h-1zM8 0h1v1h-1zM9 0h1v1h-1zM10 0h1v1h-1zM11 0h1v1h-1zM12 0h1v1h-1zM13 0h1v1h-1zM14 0h1v1h-1zM15 0h1v1h-1zM0 1h1v1h-1zM1 1h1v1h-1zM2 1h1v1h-1zM3 1h1v1h-1zM4 1h1v1h-1zM5 1h1v1h-1zM6 1h1v1h-1zM7 1h1v1h-1zM8 1h1v1h-1zM9 1h1v1h-1zM10 1h1v1h-1zM11 1h1v1h-1zM12 1h1v1h-1zM13 1h1v1h-1zM14 1h1v1h-1zM15 1h1v1h-1zM0 2h1v1h-1zM1 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM6 2h1v1h-1zM7 2h1v1h-1zM10 2h1v1h-1zM11 2h1v1h-1zM14 2h1v1h-1zM15 2h1v1h-1zM0 3h1v1h-1zM1 3h1v1h-1zM4 3h1v1h-1zM5 3h1v1h-1zM6 3h1v1h-1zM7 3h1v1h-1zM10 3h1v1h-1zM11 3h1v1h-1zM14 3h1v1h-1zM15 3h1v1h-1zM0 4h1v1h-1zM1 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM10 4h1v1h-1zM11 4h1v1h-1zM14 4h1v1h-1zM15 4h1v1h-1zM0 5h1v1h-1zM1 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM10 5h1v1h-1zM11 5h1v1h-1zM14 5h1v1h-1zM15 5h1v1h-1zM0 6h1v1h-1zM1 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM9 6h1v1h-1zM10 6h1v1h-1zM11 6h1v1h-1zM14 6h1v1h-1zM15 6h1v1h-1zM0 7h1v1h-1zM1 7h1v1h-1zM4 7h1v1h-1zM5 7h1v1h-1zM6 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM9 7h1v1h-1zM10 7h1v1h-1zM11 7h1v1h-1zM14 7h1v1h-1zM15 7h1v1h-1zM0 8h1v1h-1zM1 8h1v1h-1zM14 8h1v1h-1zM15 8h1v1h-1zM0 9h1v1h-1zM1 9h1v1h-1zM14 9h1v1h-1zM15 9h1v1h-1zM0 10h1v1h-1zM1 10h1v1h-1zM14 10h1v1h-1zM15 10h1v1h-1zM0 11h1v1h-1zM1 11h1v1h-1zM14 11h1v1h-1zM15 11h1v1h-1zM0 12h1v1h-1zM1 12h1v1h-1zM14 12h1v1h-1zM15 12h1v1h-1zM0 13h1v1h-1zM1 13h1v1h-1zM14 13h1v1h-1zM15 13h1v1h-1zM0 14h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM11 14h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1zM15 14h1v1h-1zM0 15h1v1h-1zM1 15h1v1h-1zM2 15h1v1h-1zM3 15h1v1h-1zM4 15h1v1h-1zM5 15h1v1h-1zM6 15h1v1h-1zM7 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM10 15h1v1h-1zM11 15h1v1h-1zM12 15h1v1h-1zM13 15h1v1h-1zM14 15h1v1h-1zM15 15h1v1h-1z" fill="#000000"/>
+            </svg>
+        `;
+
+        frontpageHooks.forEach(hook => {
+            const hookDiv = document.createElement('div');
+            hookDiv.className = 'input-hook-frontpage';
+
+            const hookName = hook.hook_name;
+
+            const findVariables = (script) => {
+                const variables = new Map();
+                const patterns = [
+                    /([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*"([^"]*)"/g,
+                    /([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*'([^']*)'/g,
+                    /([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*"""([^"]*)"""/g,
+                    /([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*'''([^']*)'''/g,
+                    /export\s+([A-Z_][A-Z0-9_]*)\s*=\s*"([^"]*)"/g,
+                    /export\s+([A-Z_][A-Z0-9_]*)\s*=\s*'([^']*)'/g,
+                    /([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([^"'\s\n;]+)/g
+                ];
+
+                patterns.forEach(pattern => {
+                    let match;
+                    while ((match = pattern.exec(script)) !== null) {
+                        if (!variables.has(match[1])) {
+                            variables.set(match[1], match[2]);
+                        }
+                    }
+                });
+
+                return Array.from(variables.entries()).map(([name, value]) => ({
+                    name,
+                    value
+                }));
+            };
+
+            const variables = findVariables(hook.hook_script);
+
+            let hookHTML = `
+                <form class="variables-container">
+                    ${variables.map(variable => `
+                        <div class="variable-input">
+                            <label>@${hookName}/${variable.name}</label>
+                            <input type="text" 
+                                   data-variable="${variable.name}" 
+                                   value="${variable.value}"
+                                   placeholder="Enter value for ${variable.name}"
+                                   required>
+                        </div>
+                    `).join('')}
+                    ${variables.length > 0 ? `<button type="submit" class="update-hook" title="Update hook">${updateIconSvg}</button>` : ''}
+                </form>
+            `;
+
+            hookDiv.innerHTML = hookHTML;
+            inputHooksDiv.appendChild(hookDiv);
+
+            const form = hookDiv.querySelector('form');
+            const updateButton = form.querySelector('.update-hook');
+            const inputs = form.querySelectorAll('input[data-variable]');
+
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+
+                try {
+                    updateButton.disabled = true;
+
+                    let modifiedScript = hook.hook_script;
+                    inputs.forEach(input => {
+                        const varName = input.dataset.variable;
+                        const varValue = input.value.trim();
+
+                        const originalAssignment = modifiedScript.match(new RegExp(
+                            `(?:export\\s+)?${varName}\\s*=\\s*(?:"{3}|'{3}|["']|)[^"'\\n]*(?:"{3}|'{3}|["']|)`,
+                            'm'
+                        ));
+
+                        if (originalAssignment) {
+                            const originalStr = originalAssignment[0];
+                            const isBashStyle = /^[A-Z_][A-Z0-9_]*$/.test(varName);
+
+                            let newValue;
+                            if (isBashStyle) {
+                                if (originalStr.includes('"')) {
+                                    newValue = `${varName}="${varValue}"`;
+                                } else if (originalStr.includes("'")) {
+                                    newValue = `${varName}='${varValue}'`;
+                                } else {
+                                    newValue = `${varName}=${varValue}`;
+                                }
+                            } else {
+                                const preEquals = originalStr.match(/^.*?=/)[0];
+                                if (originalStr.includes('"""')) {
+                                    newValue = `${preEquals}"""${varValue}"""`;
+                                } else if (originalStr.includes("'''")) {
+                                    newValue = `${preEquals}'''${varValue}'''`;
+                                } else if (originalStr.includes('"')) {
+                                    newValue = `${preEquals}"${varValue}"`;
+                                } else if (originalStr.includes("'")) {
+                                    newValue = `${preEquals}'${varValue}'`;
+                                } else {
+                                    newValue = `${preEquals}${varValue}`;
+                                }
+                            }
+
+                            const escapedOriginal = originalStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                            modifiedScript = modifiedScript.replace(new RegExp(escapedOriginal, 'm'), newValue);
+                        }
+                    });
+
+                    await updateExistingHook(hook.id, {
+                        ...hook,
+                        hook_script: modifiedScript
+                    });
+
+                    showStatus('Hook updated successfully!', true);
+                } catch (error) {
+                    console.error('Error updating hook:', error);
+                    showStatus('Error updating hook!', false);
+                } finally {
+                    updateButton.disabled = false;
+                }
+            });
+        });
     } catch (error) {
         console.error('Fetch error:', error);
         showStatus('Error fetching hooks!', false);
@@ -1241,6 +1373,38 @@ async function getEvalJSON(apiToken) {
         console.error('Error fetching eval_data.json:', error);
         throw error;
     }
+}
+
+function getFrontpageHooks(hooks) {
+    /**
+     * Filters an array of hooks and returns only those with show_on_frontpage set to true
+     *
+     * @param {Array} hooks - Array of hook objects
+     * @returns {Array} - Filtered array of hooks that should show on frontpage
+     *
+     * Example hook object structure:
+     * {
+     *   id: string,
+     *   hook_name: string,
+     *   hook_type: string,
+     *   hook_placement: string,
+     *   hook_script: string,
+     *   show_on_frontpage: boolean
+     * }
+     */
+    if (!Array.isArray(hooks)) {
+        console.error('getFrontpageHooks expects an array of hooks');
+        return [];
+    }
+
+    return hooks.filter(hook => {
+        if (!hook || typeof hook !== 'object') {
+            console.warn('Invalid hook object found:', hook);
+            return false;
+        }
+
+        return hook.show_on_frontpage === true;
+    });
 }
 
 function getSessionID() {
@@ -1443,6 +1607,19 @@ function initializeHookScriptEditor() {
     updateHeight();
 
     hookScriptContainer.classList.remove('editor-loading');
+}
+
+function isValidHook(hook) {
+    return (
+        hook !== null &&
+        typeof hook === 'object' &&
+        typeof hook.id !== 'undefined' &&
+        typeof hook.hook_name === 'string' &&
+        typeof hook.hook_type === 'string' &&
+        typeof hook.hook_placement === 'string' &&
+        typeof hook.hook_script === 'string' &&
+        typeof hook.show_on_frontpage === 'boolean'
+    );
 }
 
 document.querySelector('.tab[data-tab="hooks"]').addEventListener('click', () => {
