@@ -1165,6 +1165,7 @@ async function fetchHooks(apiToken) {
                 <form class="variables-container">
                     ${variables.map(variable => `
                         <div class="variable-input">
+                            <div class="connection-point" data-node-type="hook" data-node-id="${(hookName + '-' + variable.name).toLowerCase()}"></div>
                             <label>@${hookName}/${variable.name}</label>
                             <input type="text" 
                                    data-variable="${variable.name}" 
@@ -1521,105 +1522,181 @@ function highlightBlock(blockId) {
     }
 }
 
-function initializeHookScriptEditor() {
-    const hookScriptContainer = document.getElementById('hook-script');
-    if (!hookScriptContainer) {
-        console.error('Hook script container not found');
-        return;
+function initializeConnectionHandler() {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.classList.add('connector-svg');
+    svg.style.position = 'absolute';
+    svg.style.top = '0';
+    svg.style.left = '0';
+    svg.style.pointerEvents = 'none';
+    svg.style.zIndex = '1';
+    svg.style.display = 'none';
+
+    document.body.appendChild(svg);
+
+    let selectedNode = null;
+    let connections = new Set();
+
+    function getConnectionPoint(node) {
+        const nodeRect = node.getBoundingClientRect();
+        return {
+            x: nodeRect.left + nodeRect.width / 2 + (window.scrollX || window.pageXOffset),
+            y: nodeRect.top + nodeRect.height / 2 + (window.scrollY || window.pageYOffset)
+        };
     }
 
-    if (window.hookScriptEditor) {
-        const editor = window.hookScriptEditor;
-        setTimeout(() => {
-            editor.layout();
-            const contentHeight = Math.max(200, Math.min(600, editor.getContentHeight()));
-            hookScriptContainer.style.height = `${contentHeight}px`;
-        }, 0);
-        return;
+    function removeExistingConnection(node1, node2) {
+        const [source, hook] = node1.dataset.nodeType === 'hook' ? [node2, node1] : [node1, node2];
+
+        [...connections].forEach(conn => {
+            if ((conn.node1 === source && conn.node2.dataset.nodeType === 'hook') ||
+                (conn.node2 === hook && conn.node1.dataset.nodeType !== 'hook')) {
+                conn.node1.classList.remove('highlight');
+                conn.node2.classList.remove('highlight');
+                connections.delete(conn);
+                conn.path.remove();
+            }
+        });
     }
 
-    hookScriptContainer.innerHTML = '';
-    hookScriptContainer.style.backgroundColor = '#060c4d';
-    hookScriptContainer.classList.add('editor-loading');
+    function createConnection(node1, node2) {
+        if (node1?.dataset?.nodeType === 'hook') [node1, node2] = [node2, node1];
+        const connectionKey = `${node1?.dataset?.nodeId}-${node2?.dataset?.nodeId}`;
+        if ([...connections].some(conn => conn.key === connectionKey)) return;
 
-    monaco.editor.defineTheme('flatpack', {
-        base: 'vs-dark',
-        colors: {
-            'editor.background': '#060c4d',
-            'editor.lineHighlightBackground': '#080f61'
-        },
-        inherit: true,
-        rules: [
-            {token: '', background: '060c4d', foreground: 'ffffff'},
-            {token: 'comment', foreground: 'cccccc', fontStyle: 'italic'},
-            {token: 'keyword', foreground: '31efb8'}
-        ]
+        removeExistingConnection(node1, node2);
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.classList.add('connection-line');
+        path.style.strokeWidth = '2';
+        path.style.fill = 'none';
+        path.style.pointerEvents = 'auto';
+        path.style.cursor = 'pointer';
+
+        path.addEventListener('mouseenter', () => {
+            node1.classList.add('highlight');
+            node2.classList.add('highlight');
+        });
+
+        path.addEventListener('mouseleave', () => {
+            if (node1 !== selectedNode) node1.classList.remove('highlight');
+            if (node2 !== selectedNode) node2.classList.remove('highlight');
+        });
+
+        svg.appendChild(path);
+        connections.add({path, node1, node2, key: connectionKey});
+        updatePath(path, node1, node2);
+    }
+
+    function updatePath(path, node1, node2) {
+        const start = getConnectionPoint(node1);
+        const end = getConnectionPoint(node2);
+
+        const goingDown = end.y > start.y;
+
+        const verticalLineLength = 10;
+
+        const startVertical = {
+            x: start.x,
+            y: start.y + (goingDown ? verticalLineLength : -verticalLineLength)
+        };
+
+        const endVertical = {
+            x: end.x,
+            y: end.y + (goingDown ? -verticalLineLength : verticalLineLength)
+        };
+
+        const midY = (startVertical.y + endVertical.y) / 2;
+        const controlPoint1 = {
+            x: startVertical.x,
+            y: midY
+        };
+        const controlPoint2 = {
+            x: endVertical.x,
+            y: midY
+        };
+
+        path.setAttribute('d', `
+            M ${start.x},${start.y}
+            L ${startVertical.x},${startVertical.y}
+            C ${controlPoint1.x},${controlPoint1.y}
+              ${controlPoint2.x},${controlPoint2.y}
+              ${endVertical.x},${endVertical.y}
+            L ${end.x},${end.y}
+        `.trim());
+    }
+
+    function updateConnections() {
+        connections.forEach(({path, node1, node2}) => updatePath(path, node1, node2));
+    }
+
+    function toggleConnectionsVisibility(show) {
+        svg.style.display = show ? 'block' : 'none';
+    }
+
+    document.addEventListener('click', e => {
+        if (!document.querySelector('.tab[data-tab="board"]')?.classList.contains('active')) return;
+
+        if (e.target.classList.contains('connection-line')) {
+            const conn = [...connections].find(c => c.path === e.target);
+            if (conn) {
+                conn.node1.classList.remove('highlight');
+                conn.node2.classList.remove('highlight');
+                connections.delete(conn);
+                conn.path.remove();
+            }
+            return;
+        }
+
+        const node = e.target.closest('.connection-point');
+        if (!node) {
+            if (selectedNode) {
+                selectedNode.classList.remove('highlight');
+                selectedNode = null;
+            }
+            return;
+        }
+
+        if (!selectedNode) {
+            selectedNode = node;
+            selectedNode.classList.add('highlight');
+        } else if (selectedNode !== node) {
+            if (selectedNode?.dataset?.nodeType !== node?.dataset?.nodeType) {
+                createConnection(selectedNode, node);
+            }
+            selectedNode.classList.remove('highlight');
+            selectedNode = null;
+        }
     });
 
-    monaco.editor.setTheme('flatpack');
-
-    const editor = monaco.editor.create(hookScriptContainer, {
-        accessibilitySupport: 'off',
-        autoIndent: 'advanced',
-        automaticLayout: true,
-        bracketPairColorization: {
-            enabled: true
-        },
-        hideCursorInOverviewRuler: true,
-        language: 'python',
-        minimap: {
-            enabled: false
-        },
-        overviewRulerBorder: false,
-        overviewRulerLanes: 0,
-        padding: {
-            top: 25,
-            bottom: 20
-        },
-        scrollBeyondLastColumn: 0,
-        scrollBeyondLastLine: false,
-        scrollbar: {
-            horizontal: 'hidden',
-            vertical: 'hidden'
-        },
-        showUnused: true,
-        smoothScrolling: true,
-        stickyScroll: {
-            enabled: false
-        },
-        theme: 'flatpack',
-        unusualLineTerminators: 'auto',
-        value: '',
-        wordWrap: 'on',
-        wrappingIndent: 'same',
-        wrappingStrategy: 'advanced'
+    window.addEventListener('resize', () => {
+        svg.setAttribute('width', window.innerWidth);
+        svg.setAttribute('height', window.innerHeight);
+        updateConnections();
     });
 
-    window.hookScriptEditor = editor;
+    svg.setAttribute('width', window.innerWidth);
+    svg.setAttribute('height', window.innerHeight);
 
-    const updateHeight = () => {
-        const contentHeight = Math.max(200, Math.min(600, editor.getContentHeight()));
-        hookScriptContainer.style.height = `${contentHeight}px`;
-        editor.layout();
+    document.addEventListener('scroll', () => {
+        if (document.querySelector('.tab[data-tab="board"]')?.classList.contains('active')) {
+            updateConnections();
+        }
+    });
+
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            toggleConnectionsVisibility(tab.dataset.tab === 'board');
+        });
+    });
+
+    toggleConnectionsVisibility(document.querySelector('.tab[data-tab="board"]')?.classList.contains('active'));
+
+    return {
+        updateConnections,
+        connections,
+        toggleConnectionsVisibility
     };
-
-    editor.onDidContentSizeChange(updateHeight);
-    updateHeight();
-
-    hookScriptContainer.classList.remove('editor-loading');
-}
-
-function isValidHook(hook) {
-    return (
-        hook !== null &&
-        typeof hook === 'object' &&
-        typeof hook.id !== 'undefined' &&
-        typeof hook.hook_name === 'string' &&
-        typeof hook.hook_type === 'string' &&
-        typeof hook.hook_placement === 'string' &&
-        typeof hook.hook_script === 'string' &&
-        typeof hook.show_on_frontpage === 'boolean'
-    );
 }
 
 document.querySelector('.tab[data-tab="hooks"]').addEventListener('click', () => {
@@ -1821,7 +1898,6 @@ async function listMediaFiles() {
 
                         gallery.appendChild(galleryItem);
                     } else if (videoExtensions.includes(fileExtension)) {
-                        // For video files (MP4)
                         galleryItem.innerHTML = `
                             <div class="media-container">
                                 <video width="300" controls>
@@ -2802,6 +2878,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             abortBuild();
         });
     }
+
+    window.connectionHandler = initializeConnectionHandler();
 
     document.getElementById('latest-media-button')?.addEventListener('click', displayLatestMediaLightbox);
 
