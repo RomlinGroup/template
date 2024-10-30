@@ -1574,7 +1574,7 @@ function initializeConnectionHandler() {
 
     function logConnectionState() {
         const config = serializeConnections();
-        console.log('Connection Configuration:', config);
+        console.log(config);
         return config;
     }
 
@@ -1760,6 +1760,94 @@ function initializeConnectionHandler() {
         toggleConnectionsVisibility,
         getConnectionConfig: logConnectionState
     };
+}
+
+function initializeHookScriptEditor() {
+    const hookScriptContainer = document.getElementById('hook-script');
+    if (!hookScriptContainer) {
+        console.error('Hook script container not found');
+        return;
+    }
+
+    if (window.hookScriptEditor) {
+        const editor = window.hookScriptEditor;
+        setTimeout(() => {
+            editor.layout();
+            const contentHeight = Math.max(200, Math.min(600, editor.getContentHeight()));
+            hookScriptContainer.style.height = `${contentHeight}px`;
+        }, 0);
+        return;
+    }
+
+    hookScriptContainer.innerHTML = '';
+    hookScriptContainer.style.backgroundColor = '#060c4d';
+    hookScriptContainer.classList.add('editor-loading');
+
+    monaco.editor.defineTheme('flatpack', {
+        base: 'vs-dark',
+        colors: {
+            'editor.background': '#060c4d',
+            'editor.lineHighlightBackground': '#080f61'
+        },
+        inherit: true,
+        rules: [
+            {token: '', background: '060c4d', foreground: 'ffffff'},
+            {token: 'comment', foreground: 'cccccc', fontStyle: 'italic'},
+            {token: 'keyword', foreground: '31efb8'}
+        ]
+    });
+
+    monaco.editor.setTheme('flatpack');
+
+    const editor = monaco.editor.create(hookScriptContainer, {
+        accessibilitySupport: 'off',
+        autoIndent: 'advanced',
+        automaticLayout: true,
+        bracketPairColorization: {
+            enabled: true
+        },
+        hideCursorInOverviewRuler: true,
+        language: 'python',
+        minimap: {
+            enabled: false
+        },
+        overviewRulerBorder: false,
+        overviewRulerLanes: 0,
+        padding: {
+            top: 25,
+            bottom: 20
+        },
+        scrollBeyondLastColumn: 0,
+        scrollBeyondLastLine: false,
+        scrollbar: {
+            horizontal: 'hidden',
+            vertical: 'hidden'
+        },
+        showUnused: true,
+        smoothScrolling: true,
+        stickyScroll: {
+            enabled: false
+        },
+        theme: 'flatpack',
+        unusualLineTerminators: 'auto',
+        value: '',
+        wordWrap: 'on',
+        wrappingIndent: 'same',
+        wrappingStrategy: 'advanced'
+    });
+
+    window.hookScriptEditor = editor;
+
+    const updateHeight = () => {
+        const contentHeight = Math.max(200, Math.min(600, editor.getContentHeight()));
+        hookScriptContainer.style.height = `${contentHeight}px`;
+        editor.layout();
+    };
+
+    editor.onDidContentSizeChange(updateHeight);
+    updateHeight();
+
+    hookScriptContainer.classList.remove('editor-loading');
 }
 
 document.querySelector('.tab[data-tab="hooks"]').addEventListener('click', () => {
