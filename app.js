@@ -1188,50 +1188,31 @@ async function fetchHooks(apiToken) {
             form.addEventListener('submit', async (event) => {
                 event.preventDefault();
 
+                if (form.classList.contains('updating')) {
+                    return;
+                }
+
                 try {
+                    form.classList.add('updating');
                     updateButton.disabled = true;
+                    inputs.forEach(input => input.disabled = true);
+
+                    const connectionData = [...(window.connectionHandler?.connections || [])].map(conn => ({
+                        node1Id: conn.node1.dataset.nodeId,
+                        node2Id: conn.node2.dataset.nodeId
+                    }));
+
+                    const svg = document.querySelector('.connector-svg');
+                    if (svg) {
+                        svg.style.visibility = 'hidden';
+                    }
 
                     let modifiedScript = hook.hook_script;
                     inputs.forEach(input => {
                         const varName = input.dataset.variable;
                         const varValue = input.value.trim();
-
-                        const originalAssignment = modifiedScript.match(new RegExp(
-                            `(?:export\\s+)?${varName}\\s*=\\s*(?:"{3}|'{3}|["']|)[^"'\\n]*(?:"{3}|'{3}|["']|)`,
-                            'm'
-                        ));
-
-                        if (originalAssignment) {
-                            const originalStr = originalAssignment[0];
-                            const isBashStyle = /^[A-Z_][A-Z0-9_]*$/.test(varName);
-
-                            let newValue;
-                            if (isBashStyle) {
-                                if (originalStr.includes('"')) {
-                                    newValue = `${varName}="${varValue}"`;
-                                } else if (originalStr.includes("'")) {
-                                    newValue = `${varName}='${varValue}'`;
-                                } else {
-                                    newValue = `${varName}=${varValue}`;
-                                }
-                            } else {
-                                const preEquals = originalStr.match(/^.*?=/)[0];
-                                if (originalStr.includes('"""')) {
-                                    newValue = `${preEquals}"""${varValue}"""`;
-                                } else if (originalStr.includes("'''")) {
-                                    newValue = `${preEquals}'''${varValue}'''`;
-                                } else if (originalStr.includes('"')) {
-                                    newValue = `${preEquals}"${varValue}"`;
-                                } else if (originalStr.includes("'")) {
-                                    newValue = `${preEquals}'${varValue}'`;
-                                } else {
-                                    newValue = `${preEquals}${varValue}`;
-                                }
-                            }
-
-                            const escapedOriginal = originalStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                            modifiedScript = modifiedScript.replace(new RegExp(escapedOriginal, 'm'), newValue);
-                        }
+                        const regex = new RegExp(`(${varName}\\s*=\\s*)(["'])(.*?)(\\2)`, 'g');
+                        modifiedScript = modifiedScript.replace(regex, `$1$2${varValue}$2`);
                     });
 
                     await updateExistingHook(hook.id, {
@@ -1239,12 +1220,46 @@ async function fetchHooks(apiToken) {
                         hook_script: modifiedScript
                     });
 
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                    if (document.querySelector('.tab[data-tab="board"]')?.classList.contains('active') &&
+                        window.connectionHandler && connectionData.length > 0) {
+
+                        const svg = document.querySelector('.connector-svg');
+                        if (svg) {
+                            while (svg.firstChild) {
+                                svg.removeChild(svg.firstChild);
+                            }
+                        }
+
+                        requestAnimationFrame(() => {
+                            connectionData.forEach(({node1Id, node2Id}) => {
+                                const newNode1 = document.querySelector(`[data-node-id="${node1Id}"]`);
+                                const newNode2 = document.querySelector(`[data-node-id="${node2Id}"]`);
+
+                                if (newNode1 && newNode2) {
+                                    window.connectionHandler.createConnection(newNode1, newNode2, true);
+                                }
+                            });
+
+                            window.connectionHandler.updateConnections();
+
+                            requestAnimationFrame(() => {
+                                if (svg) {
+                                    svg.style.visibility = 'visible';
+                                }
+                            });
+                        });
+                    }
+
                     showStatus('Hook updated successfully!', true);
                 } catch (error) {
                     console.error('Error updating hook:', error);
                     showStatus('Error updating hook!', false);
                 } finally {
+                    form.classList.remove('updating');
                     updateButton.disabled = false;
+                    inputs.forEach(input => input.disabled = false);
                 }
             });
         });
@@ -1530,40 +1545,93 @@ function initializeConnectionHandler() {
     svg.style.pointerEvents = 'none';
     svg.style.zIndex = '1';
     svg.style.display = 'none';
-
     document.body.appendChild(svg);
 
     let selectedNode = null;
     let connections = new Set();
 
-    function getConnectionPoint(node) {
-        const nodeRect = node.getBoundingClientRect();
-        return {
-            x: nodeRect.left + nodeRect.width / 2 + (window.scrollX || window.pageXOffset),
-            y: nodeRect.top + nodeRect.height / 2 + (window.scrollY || window.pageYOffset)
-        };
+    function getNodeIdentifier(node) {
+        return node.dataset.id ||
+            node.dataset.nodeId ||
+            node.getAttribute('data-id') ||
+            node.getAttribute('id') ||
+            'unknown';
     }
 
-    function removeExistingConnection(node1, node2) {
-        const [source, hook] = node1.dataset.nodeType === 'hook' ? [node2, node1] : [node1, node2];
+    function serializeConnections() {
+        return Array.from(connections).map(conn => {
+            const sourceNode = conn.node1.dataset.nodeType !== 'hook' ? conn.node1 : conn.node2;
+            const hookNode = conn.node1.dataset.nodeType === 'hook' ? conn.node1 : conn.node2;
 
-        [...connections].forEach(conn => {
-            if ((conn.node1 === source && conn.node2.dataset.nodeType === 'hook') ||
-                (conn.node2 === hook && conn.node1.dataset.nodeType !== 'hook')) {
-                conn.node1.classList.remove('highlight');
-                conn.node2.classList.remove('highlight');
-                connections.delete(conn);
-                conn.path.remove();
-            }
+            return {
+                sourceId: getNodeIdentifier(sourceNode),
+                targetId: getNodeIdentifier(hookNode),
+                sourceType: sourceNode.dataset.nodeType,
+                targetType: hookNode.dataset.nodeType
+            };
         });
     }
 
-    function createConnection(node1, node2) {
-        if (node1?.dataset?.nodeType === 'hook') [node1, node2] = [node2, node1];
-        const connectionKey = `${node1?.dataset?.nodeId}-${node2?.dataset?.nodeId}`;
-        if ([...connections].some(conn => conn.key === connectionKey)) return;
+    function logConnectionState() {
+        const config = serializeConnections();
+        console.log('Connection Configuration:', config);
+        return config;
+    }
 
-        removeExistingConnection(node1, node2);
+    function getConnectionPoint(node, isSource) {
+        const nodeRect = node.getBoundingClientRect();
+        const x = nodeRect.left + nodeRect.width / 2 + window.scrollX;
+        const y = isSource ? nodeRect.bottom + window.scrollY : nodeRect.top + window.scrollY;
+        return {x, y};
+    }
+
+    function updateZIndex(element, isHighlighted) {
+        if (element instanceof SVGElement) {
+            if (isHighlighted) svg.appendChild(element);
+        } else {
+            element.style.zIndex = isHighlighted ? '10' : '1';
+        }
+    }
+
+    function highlightConnection(connection, highlight) {
+        connection.path.classList.toggle('highlight', highlight);
+        updateZIndex(connection.path, highlight);
+    }
+
+    function findExistingConnection(sourceNode, hookNode) {
+        return [...connections].find(conn =>
+            (conn.node1 === sourceNode && conn.node2 === hookNode) ||
+            (conn.node2 === sourceNode && conn.node1 === hookNode)
+        );
+    }
+
+    function removeConnectionsForNode(node) {
+        let wasModified = false;
+        [...connections].forEach(conn => {
+            if (conn.node1 === node || conn.node2 === node) {
+                conn.path.remove();
+                connections.delete(conn);
+                wasModified = true;
+            }
+        });
+        if (wasModified) logConnectionState();
+    }
+
+    function createConnection(node1, node2) {
+        if (!node1 || !node2) return;
+
+        const isSourceNode1 = node1.dataset.nodeType !== 'hook';
+        const isSourceNode2 = node2.dataset.nodeType !== 'hook';
+
+        if (isSourceNode1 === isSourceNode2) return;
+
+        const sourceNode = isSourceNode1 ? node1 : node2;
+        const hookNode = isSourceNode1 ? node2 : node1;
+
+        if (findExistingConnection(sourceNode, hookNode)) return;
+
+        removeConnectionsForNode(sourceNode);
+        removeConnectionsForNode(hookNode);
 
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.classList.add('connection-line');
@@ -1572,57 +1640,29 @@ function initializeConnectionHandler() {
         path.style.pointerEvents = 'auto';
         path.style.cursor = 'pointer';
 
-        path.addEventListener('mouseenter', () => {
-            node1.classList.add('highlight');
-            node2.classList.add('highlight');
-        });
+        const connection = {path, node1: sourceNode, node2: hookNode};
 
-        path.addEventListener('mouseleave', () => {
-            if (node1 !== selectedNode) node1.classList.remove('highlight');
-            if (node2 !== selectedNode) node2.classList.remove('highlight');
-        });
+        path.addEventListener('mouseenter', () => highlightConnection(connection, true));
+        path.addEventListener('mouseleave', () => highlightConnection(connection, false));
 
         svg.appendChild(path);
-        connections.add({path, node1, node2, key: connectionKey});
-        updatePath(path, node1, node2);
+        connections.add(connection);
+        updatePath(path, sourceNode, hookNode);
+        logConnectionState();
     }
 
-    function updatePath(path, node1, node2) {
-        const start = getConnectionPoint(node1);
-        const end = getConnectionPoint(node2);
+    function updatePath(path, sourceNode, hookNode) {
+        const start = getConnectionPoint(sourceNode, true);
+        const end = getConnectionPoint(hookNode, false);
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const curvature = 0.5;
+        const hx1 = start.x;
+        const hy1 = start.y + dy * curvature;
+        const hx2 = end.x;
+        const hy2 = end.y - dy * curvature;
 
-        const goingDown = end.y > start.y;
-
-        const verticalLineLength = 10;
-
-        const startVertical = {
-            x: start.x,
-            y: start.y + (goingDown ? verticalLineLength : -verticalLineLength)
-        };
-
-        const endVertical = {
-            x: end.x,
-            y: end.y + (goingDown ? -verticalLineLength : verticalLineLength)
-        };
-
-        const midY = (startVertical.y + endVertical.y) / 2;
-        const controlPoint1 = {
-            x: startVertical.x,
-            y: midY
-        };
-        const controlPoint2 = {
-            x: endVertical.x,
-            y: midY
-        };
-
-        path.setAttribute('d', `
-            M ${start.x},${start.y}
-            L ${startVertical.x},${startVertical.y}
-            C ${controlPoint1.x},${controlPoint1.y}
-              ${controlPoint2.x},${controlPoint2.y}
-              ${endVertical.x},${endVertical.y}
-            L ${end.x},${end.y}
-        `.trim());
+        path.setAttribute('d', `M ${start.x},${start.y} C ${hx1},${hy1} ${hx2},${hy2} ${end.x},${end.y}`);
     }
 
     function updateConnections() {
@@ -1639,10 +1679,9 @@ function initializeConnectionHandler() {
         if (e.target.classList.contains('connection-line')) {
             const conn = [...connections].find(c => c.path === e.target);
             if (conn) {
-                conn.node1.classList.remove('highlight');
-                conn.node2.classList.remove('highlight');
-                connections.delete(conn);
                 conn.path.remove();
+                connections.delete(conn);
+                logConnectionState();
             }
             return;
         }
@@ -1651,6 +1690,7 @@ function initializeConnectionHandler() {
         if (!node) {
             if (selectedNode) {
                 selectedNode.classList.remove('highlight');
+                updateZIndex(selectedNode, false);
                 selectedNode = null;
             }
             return;
@@ -1659,12 +1699,26 @@ function initializeConnectionHandler() {
         if (!selectedNode) {
             selectedNode = node;
             selectedNode.classList.add('highlight');
+            updateZIndex(selectedNode, true);
         } else if (selectedNode !== node) {
-            if (selectedNode?.dataset?.nodeType !== node?.dataset?.nodeType) {
-                createConnection(selectedNode, node);
-            }
+            createConnection(selectedNode, node);
             selectedNode.classList.remove('highlight');
+            updateZIndex(selectedNode, false);
             selectedNode = null;
+        }
+    });
+
+    document.addEventListener('mouseover', e => {
+        const node = e.target.closest('.connection-point');
+        if (node && node !== selectedNode) {
+            updateZIndex(node, true);
+        }
+    });
+
+    document.addEventListener('mouseout', e => {
+        const node = e.target.closest('.connection-point');
+        if (node && node !== selectedNode) {
+            updateZIndex(node, false);
         }
     });
 
@@ -1693,8 +1747,18 @@ function initializeConnectionHandler() {
 
     return {
         updateConnections,
+        createConnection,
+        removeConnection: (path) => {
+            const conn = [...connections].find(c => c.path === path);
+            if (conn) {
+                conn.path.remove();
+                connections.delete(conn);
+                logConnectionState();
+            }
+        },
         connections,
-        toggleConnectionsVisibility
+        toggleConnectionsVisibility,
+        getConnectionConfig: logConnectionState
     };
 }
 
@@ -2537,12 +2601,20 @@ function showStatus(message, isSuccess = true) {
         tabsContainer.style.marginTop = '0px';
     }
 
+    if (window.connectionHandler && typeof window.connectionHandler.updateConnections === 'function') {
+        window.connectionHandler.updateConnections();
+    }
+
     statusBar.hideTimeout = setTimeout(() => {
         statusBar.style.display = 'none';
         statusBar.classList.remove('success', 'error');
 
         if (tabsContainer) {
             tabsContainer.style.marginTop = '';
+        }
+
+        if (window.connectionHandler && typeof window.connectionHandler.updateConnections === 'function') {
+            window.connectionHandler.updateConnections();
         }
     }, 5000);
 }
