@@ -1203,11 +1203,13 @@ async function fetchHooks(apiToken) {
                     }));
 
                     const svg = document.querySelector('.connector-svg');
+
                     if (svg) {
                         svg.style.visibility = 'hidden';
                     }
 
                     let modifiedScript = hook.hook_script;
+
                     inputs.forEach(input => {
                         const varName = input.dataset.variable;
                         const varValue = input.value.trim();
@@ -1536,6 +1538,43 @@ function highlightBlock(blockId) {
     }
 }
 
+async function saveConnections(connections) {
+    const apiToken = localStorage.getItem('apiToken');
+    const csrfToken = localStorage.getItem('csrfToken');
+
+    try {
+        const response = await fetch(`${getBaseUrl()}/api/source-hook-mappings`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiToken}`,
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify(connections)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to save connections');
+        }
+
+        const data = await response.json();
+        if (data.results) {
+            const failedMappings = data.results.filter(result => !result.success);
+            if (failedMappings.length > 0) {
+                console.error('Some mappings failed:', failedMappings);
+                showStatus('Some connections failed to save', false);
+            } else {
+                showStatus('Connections saved successfully', true);
+            }
+        }
+    } catch (error) {
+        console.error('Error saving connections:', error);
+        showStatus(`Failed to save connections: ${error.message}`, false);
+        throw error;
+    }
+}
+
 function initializeConnectionHandler() {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.classList.add('connector-svg');
@@ -1551,18 +1590,13 @@ function initializeConnectionHandler() {
     let connections = new Set();
 
     function getNodeIdentifier(node) {
-        return node.dataset.id ||
-            node.dataset.nodeId ||
-            node.getAttribute('data-id') ||
-            node.getAttribute('id') ||
-            'unknown';
+        return node.dataset.nodeId || node.dataset.id || node.getAttribute('data-id') || node.getAttribute('id') || 'unknown';
     }
 
     function serializeConnections() {
         return Array.from(connections).map(conn => {
             const sourceNode = conn.node1.dataset.nodeType !== 'hook' ? conn.node1 : conn.node2;
             const hookNode = conn.node1.dataset.nodeType === 'hook' ? conn.node1 : conn.node2;
-
             return {
                 sourceId: getNodeIdentifier(sourceNode),
                 targetId: getNodeIdentifier(hookNode),
@@ -1572,11 +1606,73 @@ function initializeConnectionHandler() {
         });
     }
 
-    function logConnectionState() {
-        const config = serializeConnections();
-        console.log(config);
-        return config;
+    async function saveConnections(config) {
+        const apiToken = localStorage.getItem('apiToken');
+        const csrfToken = localStorage.getItem('csrfToken');
+
+        try {
+            const existingConnections = await fetch(`${getBaseUrl()}/api/source-hook-mappings`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${apiToken}`,
+                    'X-CSRF-Token': csrfToken
+                }
+            }).then(r => r.json())
+                .then(data => data.mappings || []);
+
+            const existingIds = new Set(existingConnections.map(conn =>
+                `${conn.source_id}-${conn.target_id}`
+            ));
+            const newIds = new Set(config.map(conn =>
+                `${conn.sourceId}-${conn.targetId}`
+            ));
+
+            const connectionsToDelete = existingConnections.filter(conn =>
+                !newIds.has(`${conn.source_id}-${conn.target_id}`)
+            );
+
+            const connectionsToAdd = config.filter(conn =>
+                !existingIds.has(`${conn.sourceId}-${conn.targetId}`)
+            );
+
+            for (const conn of connectionsToDelete) {
+                await fetch(`${getBaseUrl()}/api/source-hook-mappings/${conn.source_id}/${conn.target_id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${apiToken}`,
+                        'X-CSRF-Token': csrfToken
+                    }
+                });
+            }
+
+            if (connectionsToAdd.length > 0) {
+                await fetch(`${getBaseUrl()}/api/source-hook-mappings`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiToken}`,
+                        'X-CSRF-Token': csrfToken
+                    },
+                    body: JSON.stringify(connectionsToAdd)
+                });
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Error saving connections:', error);
+            showStatus(`Failed to save connections: ${error.message}`, false);
+            throw error;
+        }
     }
+
+    const debouncedSaveConnections = debounce(async () => {
+        try {
+            const config = serializeConnections();
+            await saveConnections(config);
+        } catch (error) {
+            console.error('Error in debouncedSaveConnections:', error);
+        }
+    }, 1000);
 
     function getConnectionPoint(node, isSource) {
         const nodeRect = node.getBoundingClientRect();
@@ -1614,10 +1710,42 @@ function initializeConnectionHandler() {
                 wasModified = true;
             }
         });
-        if (wasModified) logConnectionState();
+        if (wasModified) {
+            debouncedSaveConnections();
+        }
     }
 
-    function createConnection(node1, node2) {
+    function validateConnections() {
+        const invalidConnections = [...connections].filter(conn => {
+            const node1Exists = document.body.contains(conn.node1);
+            const node2Exists = document.body.contains(conn.node2);
+            return !node1Exists || !node2Exists;
+        });
+
+        invalidConnections.forEach(conn => {
+            conn.path.remove();
+            connections.delete(conn);
+        });
+
+        if (invalidConnections.length > 0) {
+            debouncedSaveConnections();
+        }
+    }
+
+    function updatePath(path, sourceNode, hookNode) {
+        const start = getConnectionPoint(sourceNode, true);
+        const end = getConnectionPoint(hookNode, false);
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const curvature = 0.5;
+        const hx1 = start.x;
+        const hy1 = start.y + dy * curvature;
+        const hx2 = end.x;
+        const hy2 = end.y - dy * curvature;
+        path.setAttribute('d', `M ${start.x},${start.y} C ${hx1},${hy1} ${hx2},${hy2} ${end.x},${end.y}`);
+    }
+
+    function createConnection(node1, node2, skipSave = false) {
         if (!node1 || !node2) return;
 
         const isSourceNode1 = node1.dataset.nodeType !== 'hook';
@@ -1628,7 +1756,11 @@ function initializeConnectionHandler() {
         const sourceNode = isSourceNode1 ? node1 : node2;
         const hookNode = isSourceNode1 ? node2 : node1;
 
-        if (findExistingConnection(sourceNode, hookNode)) return;
+        const existingConnection = findExistingConnection(sourceNode, hookNode);
+        if (existingConnection) {
+            existingConnection.path.remove();
+            connections.delete(existingConnection);
+        }
 
         removeConnectionsForNode(sourceNode);
         removeConnectionsForNode(hookNode);
@@ -1644,33 +1776,56 @@ function initializeConnectionHandler() {
 
         path.addEventListener('mouseenter', () => highlightConnection(connection, true));
         path.addEventListener('mouseleave', () => highlightConnection(connection, false));
+        path.addEventListener('click', (e) => {
+            e.stopPropagation();
+            connection.path.remove();
+            connections.delete(connection);
+            debouncedSaveConnections();
+        });
 
         svg.appendChild(path);
         connections.add(connection);
         updatePath(path, sourceNode, hookNode);
-        logConnectionState();
-    }
 
-    function updatePath(path, sourceNode, hookNode) {
-        const start = getConnectionPoint(sourceNode, true);
-        const end = getConnectionPoint(hookNode, false);
-        const dx = end.x - start.x;
-        const dy = end.y - start.y;
-        const curvature = 0.5;
-        const hx1 = start.x;
-        const hy1 = start.y + dy * curvature;
-        const hx2 = end.x;
-        const hy2 = end.y - dy * curvature;
-
-        path.setAttribute('d', `M ${start.x},${start.y} C ${hx1},${hy1} ${hx2},${hy2} ${end.x},${end.y}`);
+        if (!skipSave) {
+            debouncedSaveConnections();
+        }
     }
 
     function updateConnections() {
+        validateConnections();
         connections.forEach(({path, node1, node2}) => updatePath(path, node1, node2));
     }
 
     function toggleConnectionsVisibility(show) {
         svg.style.display = show ? 'block' : 'none';
+        if (show) {
+            updateConnections();
+        }
+    }
+
+    async function loadExistingConnections() {
+        const apiToken = localStorage.getItem('apiToken');
+        try {
+            const response = await callAPI('source-hook-mappings', apiToken, 'GET');
+            if (response && response.mappings) {
+                [...connections].forEach(conn => {
+                    conn.path.remove();
+                    connections.delete(conn);
+                });
+
+                response.mappings.forEach(mapping => {
+                    const sourceNode = document.querySelector(`[data-node-id="${mapping.source_id}"]`);
+                    const targetNode = document.querySelector(`[data-node-id="${mapping.target_id}"]`);
+                    if (sourceNode && targetNode) {
+                        createConnection(sourceNode, targetNode, true);
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error loading existing connections:', error);
+            showStatus('Failed to load existing connections', false);
+        }
     }
 
     document.addEventListener('click', e => {
@@ -1681,7 +1836,7 @@ function initializeConnectionHandler() {
             if (conn) {
                 conn.path.remove();
                 connections.delete(conn);
-                logConnectionState();
+                debouncedSaveConnections();
             }
             return;
         }
@@ -1707,6 +1862,12 @@ function initializeConnectionHandler() {
             selectedNode = null;
         }
     });
+
+    document.addEventListener('wheel', () => {
+        if (document.querySelector('.tab[data-tab="board"]')?.classList.contains('active')) {
+            updateConnections();
+        }
+    }, {passive: true});
 
     document.addEventListener('mouseover', e => {
         const node = e.target.closest('.connection-point');
@@ -1737,13 +1898,23 @@ function initializeConnectionHandler() {
         }
     });
 
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            toggleConnectionsVisibility(tab.dataset.tab === 'board');
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                const tab = mutation.target;
+                if (tab.classList.contains('active') && tab.dataset.tab === 'board') {
+                    toggleConnectionsVisibility(true);
+                    loadExistingConnections();
+                } else {
+                    toggleConnectionsVisibility(false);
+                }
+            }
         });
     });
 
-    toggleConnectionsVisibility(document.querySelector('.tab[data-tab="board"]')?.classList.contains('active'));
+    document.querySelectorAll('.tab').forEach(tab => {
+        observer.observe(tab, {attributes: true});
+    });
 
     return {
         updateConnections,
@@ -1753,12 +1924,13 @@ function initializeConnectionHandler() {
             if (conn) {
                 conn.path.remove();
                 connections.delete(conn);
-                logConnectionState();
+                debouncedSaveConnections();
             }
         },
         connections,
         toggleConnectionsVisibility,
-        getConnectionConfig: logConnectionState
+        getConnectionConfig: serializeConnections,
+        loadExistingConnections
     };
 }
 
@@ -1782,6 +1954,10 @@ function initializeHookScriptEditor() {
     hookScriptContainer.innerHTML = '';
     hookScriptContainer.style.backgroundColor = '#060c4d';
     hookScriptContainer.classList.add('editor-loading');
+
+    hookScriptContainer.addEventListener('wheel', () => {
+        editor.layout();
+    }, {passive: true});
 
     monaco.editor.defineTheme('flatpack', {
         base: 'vs-dark',
@@ -1885,6 +2061,10 @@ function initializeMonacoEditorForExistingBlocks() {
 
                 editorContainer.textContent = '';
 
+                editorContainer.addEventListener('wheel', () => {
+                    editor.layout();
+                }, {passive: true});
+
                 monaco.editor.defineTheme('flatpack', {
                     base: 'vs-dark',
                     colors: {
@@ -1983,6 +2163,13 @@ async function initializeApp(apiToken) {
         initBuildStatusCheck();
 
         setInterval(() => checkHeartbeat(apiToken), 1000);
+
+        const activeTab = localStorage.getItem('activeTab') || 'board';
+        if (activeTab === 'board' && window.connectionHandler) {
+            window.connectionHandler.toggleConnectionsVisibility(true);
+            await window.connectionHandler.loadExistingConnections();
+        }
+
     } catch (error) {
         console.error('Error initializing app:', error);
         if (error.name === 'TypeError' && error.message.includes('NetworkError')) {
@@ -3040,6 +3227,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.connectionHandler = initializeConnectionHandler();
 
+    window.addEventListener('wheel', () => {
+        resizeAllTextareas();
+    }, {passive: true});
+
     document.getElementById('latest-media-button')?.addEventListener('click', displayLatestMediaLightbox);
 
     if (document.querySelector('.tab[data-tab="hooks"]')) {
@@ -3165,18 +3356,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         localStorage.setItem('activeTab', tab.dataset.tab);
         resizeAllTextareas();
+
+        if (tab.dataset.tab === 'board') {
+            if (window.connectionHandler) {
+                window.connectionHandler.toggleConnectionsVisibility(true);
+                window.connectionHandler.loadExistingConnections();
+            }
+        } else {
+            if (window.connectionHandler) {
+                window.connectionHandler.toggleConnectionsVisibility(false);
+            }
+        }
     };
 
     if (boardTab) {
-        boardTab.addEventListener('click', () => setActiveTab(boardTab));
+        boardTab.addEventListener('click', () => {
+            setActiveTab(boardTab);
+            if (window.connectionHandler) {
+                window.connectionHandler.loadExistingConnections();
+            }
+        });
     } else {
         console.error('Board tab element not found.');
     }
+
     if (editorTab) {
         editorTab.addEventListener('click', () => setActiveTab(editorTab));
     } else {
         console.error('Editor tab element not found.');
     }
+
     if (hooksTab) {
         hooksTab.addEventListener('click', () => {
             setActiveTab(hooksTab);
@@ -3192,6 +3401,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
         console.error('Hooks tab element not found.');
     }
+
     if (logTab) {
         logTab.addEventListener('click', () => setActiveTab(logTab));
     } else {

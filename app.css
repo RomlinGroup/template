@@ -585,16 +585,19 @@ textarea {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px;
-    background: #000000;
-    border-radius: 4px;
-    margin: 5px 0;
+    padding: 10px;
+    background: #ffffff;
     position: relative;
 }
 
 .node-content span {
-    color: #ffffff;
+    color: #000000;
     flex-grow: 1;
+}
+
+.node-label {
+    background-color: #ffffff;
+    color: #000000;
 }
 
 .part-bash .color-label,
@@ -1066,9 +1069,7 @@ textarea {
 }
 
 #input-data {
-    background: #060c4d;
     margin-bottom: 20px;
-    padding: 20px;
 }
 
 #input-data ul {
@@ -1081,7 +1082,6 @@ textarea {
     font-size: 12px;
     margin-right: 20px;
     background: #060c4d;
-    cursor: pointer;
 }
 
 #latest-media-button {
