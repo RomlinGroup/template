@@ -1576,6 +1576,10 @@ async function saveConnections(connections) {
 }
 
 function initializeConnectionHandler() {
+    if (!isAuthenticated()) {
+        return;
+    }
+
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.classList.add('connector-svg');
     svg.style.position = 'absolute';
