@@ -2155,24 +2155,31 @@ async function initializeApp(apiToken) {
         await Promise.all([
             setupEventListeners(apiToken),
             checkHeartbeat(apiToken),
-            listMediaFiles(apiToken),
             loadDefaultFile(apiToken),
             fetchComments(apiToken),
-            fetchHooks(apiToken),
+            fetchHooks(apiToken)
+        ]);
+
+        window.connectionHandler = initializeConnectionHandler();
+
+        await new Promise(resolve => setTimeout(resolve, 150));
+
+        const activeTab = localStorage.getItem('activeTab') || 'board';
+        if (activeTab === 'board' && window.connectionHandler) {
+            window.connectionHandler.toggleConnectionsVisibility(true);
+            await window.connectionHandler.loadExistingConnections();
+            window.connectionHandler.updateConnections();
+        }
+
+        await Promise.all([
+            listMediaFiles(apiToken),
             fetchLatestLogs(apiToken),
             fetchSchedule(apiToken),
             loadEvalAndOutputFiles(apiToken)
         ]);
 
         initBuildStatusCheck();
-
         setInterval(() => checkHeartbeat(apiToken), 1000);
-
-        const activeTab = localStorage.getItem('activeTab') || 'board';
-        if (activeTab === 'board' && window.connectionHandler) {
-            window.connectionHandler.toggleConnectionsVisibility(true);
-            await window.connectionHandler.loadExistingConnections();
-        }
 
     } catch (error) {
         console.error('Error initializing app:', error);
