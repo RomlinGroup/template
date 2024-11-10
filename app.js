@@ -359,7 +359,10 @@ async function callAPI(endpoint, apiToken, method = "POST", data = null) {
         let url = `${getBaseUrl()}/api/${endpoint}`;
 
         const headers = {
-            "Authorization": `Bearer ${apiToken}`
+            "Authorization": `Bearer ${apiToken}`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
         };
 
         setCSRFHeader(headers);
@@ -386,6 +389,9 @@ async function callAPI(endpoint, apiToken, method = "POST", data = null) {
             const params = new URLSearchParams(data);
             url += `?${params.toString()}`;
         }
+
+        const timestamp = `t=${Date.now()}`;
+        url += url.includes('?') ? `&${timestamp}` : `?${timestamp}`;
 
         const response = await fetch(url, options);
 
@@ -1560,47 +1566,8 @@ function highlightBlock(blockId) {
     }
 }
 
-async function saveConnections(connections) {
-    const apiToken = localStorage.getItem('apiToken');
-    const csrfToken = localStorage.getItem('csrfToken');
-
-    try {
-        const response = await fetch(`${getBaseUrl()}/api/source-hook-mappings`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiToken}`,
-                'X-CSRF-Token': csrfToken
-            },
-            body: JSON.stringify(connections)
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Failed to save connections');
-        }
-
-        const data = await response.json();
-        if (data.results) {
-            const failedMappings = data.results.filter(result => !result.success);
-            if (failedMappings.length > 0) {
-                console.error('Some mappings failed:', failedMappings);
-                showStatus('Some connections failed to save', false);
-            } else {
-                showStatus('Connections saved successfully', true);
-            }
-        }
-    } catch (error) {
-        console.error('Error saving connections:', error);
-        showStatus(`Failed to save connections: ${error.message}`, false);
-        throw error;
-    }
-}
-
 function initializeConnectionHandler() {
-    if (!isAuthenticated()) {
-        return;
-    }
+    if (!isAuthenticated()) return;
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.classList.add('connector-svg');
@@ -1614,6 +1581,7 @@ function initializeConnectionHandler() {
 
     let selectedNode = null;
     let connections = new Set();
+    let isDirty = false;
 
     function getNodeIdentifier(node) {
         return node.dataset.nodeId || node.dataset.id || node.getAttribute('data-id') || node.getAttribute('id') || 'unknown';
@@ -1633,57 +1601,31 @@ function initializeConnectionHandler() {
     }
 
     async function saveConnections(config) {
+        if (!isDirty) return;
+
         const apiToken = localStorage.getItem('apiToken');
         const csrfToken = localStorage.getItem('csrfToken');
 
         try {
-            const existingConnections = await fetch(`${getBaseUrl()}/api/source-hook-mappings`, {
-                method: 'GET',
+            const response = await fetch(`${getBaseUrl()}/api/source-hook-mappings?t=${Date.now()}`, {
+                method: 'POST',
                 headers: {
+                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${apiToken}`,
-                    'X-CSRF-Token': csrfToken
-                }
-            }).then(r => r.json())
-                .then(data => data.mappings || []);
+                    'X-CSRF-Token': csrfToken,
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                },
+                body: JSON.stringify(config)
+            });
 
-            const existingIds = new Set(existingConnections.map(conn =>
-                `${conn.source_id}-${conn.target_id}`
-            ));
-            const newIds = new Set(config.map(conn =>
-                `${conn.sourceId}-${conn.targetId}`
-            ));
-
-            const connectionsToDelete = existingConnections.filter(conn =>
-                !newIds.has(`${conn.source_id}-${conn.target_id}`)
-            );
-
-            const connectionsToAdd = config.filter(conn =>
-                !existingIds.has(`${conn.sourceId}-${conn.targetId}`)
-            );
-
-            for (const conn of connectionsToDelete) {
-                await fetch(`${getBaseUrl()}/api/source-hook-mappings/${conn.source_id}/${conn.target_id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${apiToken}`,
-                        'X-CSRF-Token': csrfToken
-                    }
-                });
+            if (!response.ok) throw new Error(`Failed to save connections: ${response.statusText}`);
+            const result = await response.json();
+            if (result.mappings) {
+                isDirty = false;
+                return true;
             }
-
-            if (connectionsToAdd.length > 0) {
-                await fetch(`${getBaseUrl()}/api/source-hook-mappings`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiToken}`,
-                        'X-CSRF-Token': csrfToken
-                    },
-                    body: JSON.stringify(connectionsToAdd)
-                });
-            }
-
-            return true;
         } catch (error) {
             console.error('Error saving connections:', error);
             showStatus(`Failed to save connections: ${error.message}`, false);
@@ -1699,6 +1641,11 @@ function initializeConnectionHandler() {
             console.error('Error in debouncedSaveConnections:', error);
         }
     }, 1000);
+
+    function markDirty() {
+        isDirty = true;
+        debouncedSaveConnections();
+    }
 
     function getConnectionPoint(node, isSource) {
         const nodeRect = node.getBoundingClientRect();
@@ -1736,9 +1683,7 @@ function initializeConnectionHandler() {
                 wasModified = true;
             }
         });
-        if (wasModified) {
-            debouncedSaveConnections();
-        }
+        if (wasModified) markDirty();
     }
 
     function validateConnections() {
@@ -1753,9 +1698,7 @@ function initializeConnectionHandler() {
             connections.delete(conn);
         });
 
-        if (invalidConnections.length > 0) {
-            debouncedSaveConnections();
-        }
+        if (invalidConnections.length > 0) markDirty();
     }
 
     function updatePath(path, sourceNode, hookNode) {
@@ -1776,7 +1719,6 @@ function initializeConnectionHandler() {
 
         const isSourceNode1 = node1.dataset.nodeType !== 'hook';
         const isSourceNode2 = node2.dataset.nodeType !== 'hook';
-
         if (isSourceNode1 === isSourceNode2) return;
 
         const sourceNode = isSourceNode1 ? node1 : node2;
@@ -1806,16 +1748,14 @@ function initializeConnectionHandler() {
             e.stopPropagation();
             connection.path.remove();
             connections.delete(connection);
-            debouncedSaveConnections();
+            markDirty();
         });
 
         svg.appendChild(path);
         connections.add(connection);
         updatePath(path, sourceNode, hookNode);
 
-        if (!skipSave) {
-            debouncedSaveConnections();
-        }
+        if (!skipSave) markDirty();
     }
 
     function updateConnections() {
@@ -1825,9 +1765,7 @@ function initializeConnectionHandler() {
 
     function toggleConnectionsVisibility(show) {
         svg.style.display = show ? 'block' : 'none';
-        if (show) {
-            updateConnections();
-        }
+        if (show) updateConnections();
     }
 
     async function loadExistingConnections() {
@@ -1844,9 +1782,12 @@ function initializeConnectionHandler() {
                     const sourceNode = document.querySelector(`[data-node-id="${mapping.source_id}"]`);
                     const targetNode = document.querySelector(`[data-node-id="${mapping.target_id}"]`);
                     if (sourceNode && targetNode) {
+                        sourceNode.dataset.mappingId = mapping.id;
+                        targetNode.dataset.mappingId = mapping.id;
                         createConnection(sourceNode, targetNode, true);
                     }
                 });
+                isDirty = false;
             }
         } catch (error) {
             console.error('Error loading existing connections:', error);
@@ -1862,7 +1803,7 @@ function initializeConnectionHandler() {
             if (conn) {
                 conn.path.remove();
                 connections.delete(conn);
-                debouncedSaveConnections();
+                markDirty();
             }
             return;
         }
@@ -1897,16 +1838,12 @@ function initializeConnectionHandler() {
 
     document.addEventListener('mouseover', e => {
         const node = e.target.closest('.connection-point');
-        if (node && node !== selectedNode) {
-            updateZIndex(node, true);
-        }
+        if (node && node !== selectedNode) updateZIndex(node, true);
     });
 
     document.addEventListener('mouseout', e => {
         const node = e.target.closest('.connection-point');
-        if (node && node !== selectedNode) {
-            updateZIndex(node, false);
-        }
+        if (node && node !== selectedNode) updateZIndex(node, false);
     });
 
     window.addEventListener('resize', () => {
@@ -1950,7 +1887,7 @@ function initializeConnectionHandler() {
             if (conn) {
                 conn.path.remove();
                 connections.delete(conn);
-                debouncedSaveConnections();
+                markDirty();
             }
         },
         connections,
