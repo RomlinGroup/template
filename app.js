@@ -694,9 +694,40 @@ async function deleteComment(commentId) {
 async function deleteHook(hookId) {
     const apiToken = localStorage.getItem('apiToken');
     try {
+        const currentConnections = [...window.connectionHandler.connections].filter(conn => {
+            const hookNode = conn.node1.dataset.nodeType === 'hook' ? conn.node1 : conn.node2;
+            return !hookNode.closest(`[data-hook-id="${hookId}"]`);
+        });
+
         await callAPI(`hooks/${hookId}`, apiToken, 'DELETE');
+
+        [...window.connectionHandler.connections].forEach(conn => {
+            const hookNode = conn.node1.dataset.nodeType === 'hook' ? conn.node1 : conn.node2;
+            if (hookNode.closest(`[data-hook-id="${hookId}"]`)) {
+                conn.path.remove();
+                window.connectionHandler.connections.delete(conn);
+            }
+        });
+
+        const hookElement = document.querySelector(`[data-hook-id="${hookId}"]`);
+        if (hookElement) {
+            hookElement.remove();
+        }
+
         showStatus('Hook deleted successfully!', true);
-        document.querySelector(`[data-hook-id="${hookId}"]`).remove();
+
+        const hooks = await callAPI('hooks', apiToken, 'GET');
+        renderHooks(hooks.hooks);
+
+        const unaffectedConnections = currentConnections.map(conn => ({
+            sourceId: conn.node1.dataset.nodeType !== 'hook' ? conn.node1.dataset.nodeId : conn.node2.dataset.nodeId,
+            targetId: conn.node1.dataset.nodeType === 'hook' ? conn.node1.dataset.nodeId : conn.node2.dataset.nodeId
+        }));
+
+        if (window.connectionHandler) {
+            window.connectionHandler.updateConnections();
+            await window.connectionHandler.loadExistingConnections(unaffectedConnections);
+        }
     } catch (error) {
         console.error('Error deleting hook:', error);
         showStatus('Error deleting hook!', false);
@@ -1582,6 +1613,7 @@ function initializeConnectionHandler() {
     let selectedNode = null;
     let connections = new Set();
     let isDirty = false;
+    const connectedSources = new Map();
 
     function getNodeIdentifier(node) {
         return node.dataset.nodeId || node.dataset.id || node.getAttribute('data-id') || node.getAttribute('id') || 'unknown';
@@ -1606,30 +1638,24 @@ function initializeConnectionHandler() {
         const apiToken = localStorage.getItem('apiToken');
         const csrfToken = localStorage.getItem('csrfToken');
 
-        try {
-            const response = await fetch(`${getBaseUrl()}/api/source-hook-mappings?t=${Date.now()}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiToken}`,
-                    'X-CSRF-Token': csrfToken,
-                    'Cache-Control': 'no-cache, no-store, must-revalidate',
-                    'Pragma': 'no-cache',
-                    'Expires': '0'
-                },
-                body: JSON.stringify(config)
-            });
+        const response = await fetch(`${getBaseUrl()}/api/source-hook-mappings?t=${Date.now()}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiToken}`,
+                'X-CSRF-Token': csrfToken,
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            },
+            body: JSON.stringify(config)
+        });
 
-            if (!response.ok) throw new Error(`Failed to save connections: ${response.statusText}`);
-            const result = await response.json();
-            if (result.mappings) {
-                isDirty = false;
-                return true;
-            }
-        } catch (error) {
-            console.error('Error saving connections:', error);
-            showStatus(`Failed to save connections: ${error.message}`, false);
-            throw error;
+        if (!response.ok) throw new Error(`Failed to save connections: ${response.statusText}`);
+        const result = await response.json();
+        if (result.mappings) {
+            isDirty = false;
+            return true;
         }
     }
 
@@ -1668,18 +1694,45 @@ function initializeConnectionHandler() {
     }
 
     function findExistingConnection(sourceNode, hookNode) {
-        return [...connections].find(conn =>
-            (conn.node1 === sourceNode && conn.node2 === hookNode) ||
-            (conn.node2 === sourceNode && conn.node1 === hookNode)
-        );
+        const actualSourceNode = sourceNode.dataset.nodeType !== 'hook' ? sourceNode : hookNode;
+        const actualHookNode = sourceNode.dataset.nodeType === 'hook' ? sourceNode : hookNode;
+        const sourceId = getNodeIdentifier(actualSourceNode);
+        const hookId = getNodeIdentifier(actualHookNode);
+
+        return [...connections].find(conn => {
+            const connSourceNode = conn.node1.dataset.nodeType !== 'hook' ? conn.node1 : conn.node2;
+            const connHookNode = conn.node1.dataset.nodeType === 'hook' ? conn.node1 : conn.node2;
+            const connSourceId = getNodeIdentifier(connSourceNode);
+            const connHookId = getNodeIdentifier(connHookNode);
+
+            return (connSourceId === sourceId && connHookId === hookId) ||
+                (connSourceId === hookId && connHookId === sourceId);
+        });
+    }
+
+    function hasExistingSourceConnection(sourceNode) {
+        const sourceId = getNodeIdentifier(sourceNode);
+        return [...connections].some(conn => {
+            const connSourceNode = conn.node1.dataset.nodeType !== 'hook' ? conn.node1 : conn.node2;
+            return getNodeIdentifier(connSourceNode) === sourceId;
+        });
+    }
+
+    function removeConnection(connection) {
+        if (!connection) return;
+        const sourceNode = connection.node1.dataset.nodeType !== 'hook' ? connection.node1 : connection.node2;
+        const sourceId = getNodeIdentifier(sourceNode);
+        connectedSources.delete(sourceId);
+        connection.path.remove();
+        connections.delete(connection);
+        markDirty();
     }
 
     function removeConnectionsForNode(node) {
         let wasModified = false;
         [...connections].forEach(conn => {
             if (conn.node1 === node || conn.node2 === node) {
-                conn.path.remove();
-                connections.delete(conn);
+                removeConnection(conn);
                 wasModified = true;
             }
         });
@@ -1687,18 +1740,13 @@ function initializeConnectionHandler() {
     }
 
     function validateConnections() {
-        const invalidConnections = [...connections].filter(conn => {
+        [...connections].forEach(conn => {
             const node1Exists = document.body.contains(conn.node1);
             const node2Exists = document.body.contains(conn.node2);
-            return !node1Exists || !node2Exists;
+            if (!node1Exists || !node2Exists) {
+                removeConnection(conn);
+            }
         });
-
-        invalidConnections.forEach(conn => {
-            conn.path.remove();
-            connections.delete(conn);
-        });
-
-        if (invalidConnections.length > 0) markDirty();
     }
 
     function updatePath(path, sourceNode, hookNode) {
@@ -1715,23 +1763,31 @@ function initializeConnectionHandler() {
     }
 
     function createConnection(node1, node2, skipSave = false) {
-        if (!node1 || !node2) return;
+        if (!node1 || !node2) return null;
 
         const isSourceNode1 = node1.dataset.nodeType !== 'hook';
         const isSourceNode2 = node2.dataset.nodeType !== 'hook';
-        if (isSourceNode1 === isSourceNode2) return;
+
+        if (isSourceNode1 === isSourceNode2) return null;
 
         const sourceNode = isSourceNode1 ? node1 : node2;
         const hookNode = isSourceNode1 ? node2 : node1;
 
-        const existingConnection = findExistingConnection(sourceNode, hookNode);
-        if (existingConnection) {
-            existingConnection.path.remove();
-            connections.delete(existingConnection);
+        const sourceId = getNodeIdentifier(sourceNode);
+        const hookId = getNodeIdentifier(hookNode);
+
+        if (connectedSources.has(sourceId)) {
+            return null;
         }
 
-        removeConnectionsForNode(sourceNode);
-        removeConnectionsForNode(hookNode);
+        if (hasExistingSourceConnection(sourceNode)) {
+            return null;
+        }
+
+        const existingConnection = findExistingConnection(sourceNode, hookNode);
+        if (existingConnection) {
+            return null;
+        }
 
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.classList.add('connection-line');
@@ -1746,16 +1802,16 @@ function initializeConnectionHandler() {
         path.addEventListener('mouseleave', () => highlightConnection(connection, false));
         path.addEventListener('click', (e) => {
             e.stopPropagation();
-            connection.path.remove();
-            connections.delete(connection);
-            markDirty();
+            removeConnection(connection);
         });
 
         svg.appendChild(path);
         connections.add(connection);
+        connectedSources.set(sourceId, hookId);
         updatePath(path, sourceNode, hookNode);
 
         if (!skipSave) markDirty();
+        return connection;
     }
 
     function updateConnections() {
@@ -1768,25 +1824,41 @@ function initializeConnectionHandler() {
         if (show) updateConnections();
     }
 
-    async function loadExistingConnections() {
+    async function loadExistingConnections(preservedConnections = null) {
         const apiToken = localStorage.getItem('apiToken');
         try {
             const response = await callAPI('source-hook-mappings', apiToken, 'GET');
             if (response && response.mappings) {
-                [...connections].forEach(conn => {
-                    conn.path.remove();
-                    connections.delete(conn);
-                });
+                validateConnections();
+                connectedSources.clear();
+
+                if (preservedConnections) {
+                    preservedConnections.forEach(pc => {
+                        connectedSources.set(pc.sourceId, pc.targetId);
+                    });
+                }
 
                 response.mappings.forEach(mapping => {
+                    if (connectedSources.has(mapping.source_id)) return;
+
                     const sourceNode = document.querySelector(`[data-node-id="${mapping.source_id}"]`);
                     const targetNode = document.querySelector(`[data-node-id="${mapping.target_id}"]`);
-                    if (sourceNode && targetNode) {
+
+                    if (!sourceNode || !targetNode) return;
+
+                    if (preservedConnections?.some(pc =>
+                        pc.sourceId === mapping.source_id && pc.targetId === mapping.target_id)) {
+                        return;
+                    }
+
+                    const existingConnection = findExistingConnection(sourceNode, targetNode);
+                    if (!existingConnection && !hasExistingSourceConnection(sourceNode)) {
                         sourceNode.dataset.mappingId = mapping.id;
                         targetNode.dataset.mappingId = mapping.id;
                         createConnection(sourceNode, targetNode, true);
                     }
                 });
+
                 isDirty = false;
             }
         } catch (error) {
@@ -1800,11 +1872,7 @@ function initializeConnectionHandler() {
 
         if (e.target.classList.contains('connection-line')) {
             const conn = [...connections].find(c => c.path === e.target);
-            if (conn) {
-                conn.path.remove();
-                connections.delete(conn);
-                markDirty();
-            }
+            if (conn) removeConnection(conn);
             return;
         }
 
@@ -1819,6 +1887,7 @@ function initializeConnectionHandler() {
         }
 
         if (!selectedNode) {
+            if (node.dataset.nodeType !== 'hook' && hasExistingSourceConnection(node)) return;
             selectedNode = node;
             selectedNode.classList.add('highlight');
             updateZIndex(selectedNode, true);
@@ -1882,14 +1951,8 @@ function initializeConnectionHandler() {
     return {
         updateConnections,
         createConnection,
-        removeConnection: (path) => {
-            const conn = [...connections].find(c => c.path === path);
-            if (conn) {
-                conn.path.remove();
-                connections.delete(conn);
-                markDirty();
-            }
-        },
+        removeConnectionsForNode,
+        removeConnection,
         connections,
         toggleConnectionsVisibility,
         getConnectionConfig: serializeConnections,
@@ -3099,6 +3162,11 @@ document.getElementById('hook-form').addEventListener('submit', async function (
 
     if (hookName && hookType && hookScript) {
         try {
+            const existingConnections = [...window.connectionHandler.connections].map(conn => ({
+                sourceId: conn.node1.dataset.nodeType !== 'hook' ? conn.node1.dataset.nodeId : conn.node2.dataset.nodeId,
+                targetId: conn.node1.dataset.nodeType === 'hook' ? conn.node1.dataset.nodeId : conn.node2.dataset.nodeId
+            }));
+
             const response = await fetch(`${getBaseUrl()}/api/hooks`, {
                 method: 'POST',
                 headers: {
@@ -3118,14 +3186,30 @@ document.getElementById('hook-form').addEventListener('submit', async function (
             if (response.ok) {
                 const data = await response.json();
                 if (data.existing_hook) {
-                    handleHookConflict(data.existing_hook, data.new_hook);
+                    if (confirm(`A hook with the name "${hookName}" already exists. Do you want to update it?`)) {
+                        await updateExistingHook(data.existing_hook.id, {
+                            hook_name: hookName,
+                            hook_type: hookType,
+                            hook_placement: hookPlacement,
+                            hook_script: hookScript,
+                            show_on_frontpage: showOnFrontpage
+                        });
+
+                        if (window.connectionHandler) {
+                            window.connectionHandler.updateConnections();
+                            await window.connectionHandler.loadExistingConnections(existingConnections);
+                        }
+                    }
                 } else {
                     await fetchHooks(apiToken);
+
+                    if (window.connectionHandler) {
+                        window.connectionHandler.updateConnections();
+                        await window.connectionHandler.loadExistingConnections(existingConnections);
+                    }
+
                     showStatus('Hook added successfully!', true);
                 }
-            } else if (response.status === 409) {
-                const data = await response.json();
-                handleHookConflict(data.existing_hook, data.new_hook);
             } else {
                 const data = await response.json();
                 showStatus(`Error: ${data.detail}`, false);
