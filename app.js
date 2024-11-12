@@ -432,10 +432,6 @@ async function checkApiTokenValidity(apiToken) {
 }
 
 async function checkBuildStatus() {
-    detectPowerSuspend(6000, (suspendTime) => {
-        return;
-    });
-
     let apiToken;
 
     try {
@@ -539,10 +535,6 @@ async function checkHeartbeat(apiToken) {
         console.error('Heartbeat elements are missing.');
         return;
     }
-
-    detectPowerSuspend(6000, (suspendTime) => {
-        return;
-    });
 
     try {
         const data = await callAPI('heartbeat', apiToken, 'GET');
@@ -786,20 +778,6 @@ async function deleteScheduleEntry(scheduleId, datetimeIndex = null) {
         console.error('Error deleting schedule entry:', error);
         showStatus(`Error during deletion: ${error.message}`, false);
     }
-}
-
-function detectPowerSuspend(threshold = 3000, callback) {
-    let lastCheck = Date.now();
-
-    const interval = setInterval(() => {
-        const now = Date.now();
-        if (now - lastCheck > threshold) {
-            callback?.(now - lastCheck);
-        }
-        lastCheck = now;
-    }, 1000);
-
-    return () => clearInterval(interval);
 }
 
 function disableInteractions() {
