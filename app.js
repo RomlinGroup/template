@@ -1708,18 +1708,8 @@ function initializeConnectionHandler() {
     async function removeConnection(connection) {
         try {
             const apiToken = localStorage.getItem('apiToken');
-            const response = await callAPI('source-hook-mappings', apiToken, 'GET');
 
-            const remainingConnections = response?.mappings?.filter(mapping =>
-                mapping.id !== connection.id
-            ).map(mapping => ({
-                sourceId: mapping.source_id,
-                targetId: mapping.target_id,
-                sourceType: mapping.source_type,
-                targetType: mapping.target_type
-            })) || [];
-
-            await callAPI('source-hook-mappings', apiToken, 'POST', remainingConnections);
+            await callAPI(`source-hook-mappings/${connection.id}`, apiToken, 'DELETE');
             await refreshConnections();
         } catch (error) {
             console.error('Error removing connection:', error);
