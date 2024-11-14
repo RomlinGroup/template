@@ -1322,7 +1322,6 @@ async function fetchHooks(apiToken) {
                     showStatus('Hook updated successfully!', true);
                 } catch (error) {
                     console.error('Error updating hook:', error);
-                    showStatus('Error updating hook!', false);
                 } finally {
                     form.classList.remove('updating');
                     updateButton.disabled = false;
@@ -1332,7 +1331,6 @@ async function fetchHooks(apiToken) {
         });
     } catch (error) {
         console.error('Fetch error:', error);
-        showStatus('Error fetching hooks!', false);
     }
 }
 
