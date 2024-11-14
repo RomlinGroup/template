@@ -1686,7 +1686,7 @@ function initializeConnectionHandler() {
             const response = await callAPI('source-hook-mappings', apiToken, 'GET');
             clearConnections();
 
-            if (response?.mappings) {
+            if (response?.mappings && response.mappings.length > 0) {
                 response.mappings.forEach(mapping => {
                     const sourceNode = document.querySelector(`[data-node-id="${mapping.source_id}"]`);
                     const targetNode = document.querySelector(`[data-node-id="${mapping.target_id}"]`);
@@ -1696,6 +1696,8 @@ function initializeConnectionHandler() {
                         connections.add(connection);
                     }
                 });
+            } else {
+                clearConnections();
             }
         } catch (error) {
             console.error('Error refreshing connections:', error);
