@@ -892,7 +892,7 @@ function displayLatestMediaLightbox() {
                     mediaContainer.innerHTML = '';
                     filename.textContent = latestFile.name;
 
-                    if (['gif', 'jpg', 'jpeg', 'png'].includes(fileExtension)) {
+                    if (['gif', 'jpg', 'png'].includes(fileExtension)) {
                         const img = document.createElement('img');
 
                         img.src = `/output/${latestFile.name}?cb=${timestamp}`;
@@ -2303,7 +2303,7 @@ async function listMediaFiles() {
                     galleryItem.className = 'gallery-item';
 
                     const fileExtension = file.name.split('.').pop().toLowerCase();
-                    const imageExtensions = ['jpeg', 'jpg', 'gif', 'png'];
+                    const imageExtensions = ['gif', 'jpg', 'png'];
                     const videoExtensions = ['mp4'];
 
                     if (imageExtensions.includes(fileExtension)) {
