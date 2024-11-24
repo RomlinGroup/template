@@ -835,7 +835,7 @@ function displayLatestMediaLightbox() {
 
     closeButton.innerHTML = `
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-            <path d="M1 1h1v1h-1zM2 1h1v1h-1zM13 1h1v1h-1zM14 1h1v1h-1zM1 2h1v1h-1zM2 2h1v1h-1zM13 2h1v1h-1zM14 2h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM11 3h1v1h-1zM12 3h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM9 6h1v1h-1zM10 6h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM9 9h1v1h-1zM10 9h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM3 11h1v1h-1zM4 11h1v1h-1zM11 11h1v1h-1zM12 11h1v1h-1zM3 12h1v1h-1zM4 12h1v1h-1zM11 12h1v1h-1zM12 12h1v1h-1zM1 13h1v1h-1zM2 13h1v1h-1zM13 13h1v1h-1zM14 13h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1z" fill="#ffffff"/>
+            <path d="M1 1h1v1h-1zM2 1h1v1h-1zM13 1h1v1h-1zM14 1h1v1h-1zM1 2h1v1h-1zM2 2h1v1h-1zM13 2h1v1h-1zM14 2h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM11 3h1v1h-1zM12 3h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM9 6h1v1h-1zM10 6h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM9 9h1v1h-1zM10 9h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM3 11h1v1h-1zM4 11h1v1h-1zM11 11h1v1h-1zM12 11h1v1h-1zM3 12h1v1h-1zM4 12h1v1h-1zM11 12h1v1h-1zM12 12h1v1h-1zM1 13h1v1h-1zM2 13h1v1h-1zM13 13h1v1h-1zM14 13h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1z" fill="#000000"/>
         </svg>
     `;
 
@@ -2269,6 +2269,82 @@ async function initializeApp(apiToken) {
     }
 }
 
+function initMasonry() {
+    const grid = document.querySelector('.gallery');
+    if (!grid) return;
+
+    if (grid.masonry) {
+        grid.masonry.destroy();
+    }
+
+    const calculateColumns = () => {
+        const containerWidth = grid.parentElement.offsetWidth;
+        const minItemWidth = 200;
+        const gutter = 16;
+        return Math.floor((containerWidth + gutter) / (minItemWidth + gutter));
+    };
+
+    const calculateItemWidth = (columns) => {
+        const containerWidth = grid.parentElement.offsetWidth;
+        const gutter = 16;
+        return (containerWidth - (gutter * (columns - 1))) / columns;
+    };
+
+    const resizeItems = () => {
+        const columns = calculateColumns();
+        const itemWidth = calculateItemWidth(columns);
+
+        document.querySelectorAll('.gallery-item').forEach(item => {
+            item.style.width = `${itemWidth}px`;
+
+            const mediaContainer = item.querySelector('.media-container');
+            if (mediaContainer) {
+                mediaContainer.style.width = '100%';
+
+                const img = mediaContainer.querySelector('img');
+                if (img) {
+                    img.style.width = '100%';
+                    img.style.height = 'auto';
+                    img.style.objectFit = 'cover';
+                }
+
+                const video = mediaContainer.querySelector('video');
+                if (video) {
+                    video.style.width = '100%';
+                    video.style.height = 'auto';
+                }
+            }
+        });
+    };
+
+    imagesLoaded(grid, function () {
+        resizeItems();
+
+        const masonry = new Masonry(grid, {
+            itemSelector: '.gallery-item',
+            columnWidth: '.gallery-item',
+            gutter: 16,
+            percentPosition: false,
+            horizontalOrder: true,
+            transitionDuration: '0.1s',
+            initLayout: true,
+            resize: true,
+            fitWidth: false
+        });
+
+        const debouncedResize = debounce(() => {
+            resizeItems();
+            masonry.layout();
+        }, 250);
+
+        window.addEventListener('resize', debouncedResize);
+
+        setTimeout(() => {
+            masonry.layout();
+        }, 100);
+    });
+}
+
 async function listMediaFiles() {
     try {
         const response = await callAPI('list-media-files', localStorage.getItem('apiToken'), 'GET');
@@ -2336,7 +2412,10 @@ async function listMediaFiles() {
 
                         gallery.appendChild(galleryItem);
                     }
+                });
 
+                imagesLoaded(gallery, function () {
+                    initMasonry();
                 });
             } else {
                 mediaListContainer.style.display = 'block';

@@ -591,6 +591,7 @@ textarea {
     gap: 10px;
     padding: 10px;
     background: #ffffff;
+    border: 1px solid #f0f2ff;
     position: relative;
 }
 
@@ -1144,12 +1145,14 @@ textarea {
 }
 
 #media-list-container .gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 16px;
+    width: 100%;
+    margin: 0 auto;
 }
 
 #media-list-container .gallery-item {
+    width: 200px;
+    float: left;
+    margin-bottom: 16px;
     display: flex;
     position: relative;
     flex-direction: column;
@@ -1398,5 +1401,18 @@ textarea {
 
     #toolbar {
         border-bottom: 1px solid var(--color-primary);
+    }
+
+    .close-lightbox {
+        background: #ffffff;
+        border: 1px solid #000000;
+    }
+
+    .lightbox-content img {
+        border: 1px solid #ffffff;
+    }
+
+    .node-content {
+        border: 0px;
     }
 }

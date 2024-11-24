@@ -4,6 +4,8 @@
   "description": "Default template for Flatpack",
   "main": "index.html",
   "dependencies": {
+    "imagesloaded": "^5.0.0",
+    "masonry-layout": "^4.2.2",
     "monaco-editor": "0.52.0"
   },
   "author": "Romlin Group AB",
