@@ -74,7 +74,9 @@ let disconnectedCount = 0;
 let highlightTimeout;
 let initializationTimeout;
 let isBuilding = false;
+let isExpanded = false;
 let isFetchingEvalData = false;
+let isLayoutInProgress = false;
 let lastStatus = '';
 let lastStep = '';
 let manualDatetimes = [];
@@ -2269,164 +2271,244 @@ async function initializeApp(apiToken) {
     }
 }
 
-function initMasonry() {
-    const grid = document.querySelector('.gallery');
-    if (!grid) return;
-
-    if (grid.masonry) {
-        grid.masonry.destroy();
-    }
-
-    const calculateColumns = () => {
-        const containerWidth = grid.parentElement.offsetWidth;
-        const minItemWidth = 200;
-        const gutter = 16;
-        return Math.floor((containerWidth + gutter) / (minItemWidth + gutter));
-    };
-
-    const calculateItemWidth = (columns) => {
-        const containerWidth = grid.parentElement.offsetWidth;
-        const gutter = 16;
-        return (containerWidth - (gutter * (columns - 1))) / columns;
-    };
-
-    const resizeItems = () => {
-        const columns = calculateColumns();
-        const itemWidth = calculateItemWidth(columns);
-
-        document.querySelectorAll('.gallery-item').forEach(item => {
-            item.style.width = `${itemWidth}px`;
-
-            const mediaContainer = item.querySelector('.media-container');
-            if (mediaContainer) {
-                mediaContainer.style.width = '100%';
-
-                const img = mediaContainer.querySelector('img');
-                if (img) {
-                    img.style.width = '100%';
-                    img.style.height = 'auto';
-                    img.style.objectFit = 'cover';
-                }
-
-                const video = mediaContainer.querySelector('video');
-                if (video) {
-                    video.style.width = '100%';
-                    video.style.height = 'auto';
-                }
-            }
-        });
-    };
-
-    imagesLoaded(grid, function () {
-        resizeItems();
-
-        const masonry = new Masonry(grid, {
-            itemSelector: '.gallery-item',
-            columnWidth: '.gallery-item',
-            gutter: 16,
-            percentPosition: false,
-            horizontalOrder: true,
-            transitionDuration: '0.1s',
-            initLayout: true,
-            resize: true,
-            fitWidth: false
-        });
-
-        const debouncedResize = debounce(() => {
-            resizeItems();
-            masonry.layout();
-        }, 250);
-
-        window.addEventListener('resize', debouncedResize);
-
-        setTimeout(() => {
-            masonry.layout();
-        }, 100);
-    });
-}
-
 async function listMediaFiles() {
     try {
         const response = await callAPI('list-media-files', localStorage.getItem('apiToken'), 'GET');
         const mediaListContainer = document.getElementById('media-list-container');
 
-        if (!mediaListContainer) {
-            console.error('Media list container not found in the DOM');
-            showStatus('Error: Media list container not found.', false);
+        if (!mediaListContainer) return;
+
+        mediaListContainer.innerHTML = '';
+        if (!response.files?.length) {
+            mediaListContainer.innerHTML = '<p>No media files available.</p>';
             return;
         }
 
-        mediaListContainer.innerHTML = '';
+        mediaListContainer.style.display = 'block';
+        mediaListContainer.innerHTML = `
+            <div id="gallery-header">
+                <div id="latest-media-button">Play</div>
+                <div class="media-count">Media: ${response.files.length}</div>
+            </div>
+            <div class="gallery"></div>
+            ${response.files.length > 9 ? `
+                <div class="gallery-controls">
+                    <button id="show-more-button" class="gallery-control-button">
+                        Show all (${response.files.length - 9} more)
+                    </button>
+                </div>
+            ` : ''}
+        `;
 
-        if (response.files && Array.isArray(response.files)) {
-            if (response.files.length > 0) {
-                mediaListContainer.style.display = 'block';
-                mediaListContainer.innerHTML = `
-                    <div id="gallery-header">
-                        <div id="latest-media-button">Play</div>
-                        <div class="media-count">Media: ${response.files.length}</div>
+        document.getElementById('latest-media-button')?.addEventListener('click', displayLatestMediaLightbox);
+
+        const gallery = mediaListContainer.querySelector('.gallery');
+        const showMoreButton = document.getElementById('show-more-button');
+        let masonryInstance = null;
+
+        async function initializeMasonry() {
+            if (isLayoutInProgress) return;
+            isLayoutInProgress = true;
+
+            try {
+                if (masonryInstance) masonryInstance.destroy();
+                gallery.style.opacity = '0';
+                gallery.style.transition = 'none';
+                const itemWidth = calculateItemWidth();
+                gallery.querySelectorAll('.gallery-item').forEach(item => {
+                    item.style.width = `${itemWidth}px`;
+                    item.style.transition = 'none';
+                });
+
+                await Promise.all(Array.from(gallery.getElementsByTagName('img')).map(img => new Promise(resolve => {
+                    if (img.complete) resolve();
+                    else {
+                        img.onload = resolve;
+                        img.onerror = resolve;
+                    }
+                })));
+
+                masonryInstance = new Masonry(gallery, {
+                    itemSelector: '.gallery-item',
+                    columnWidth: '.gallery-item',
+                    gutter: 20,
+                    percentPosition: false,
+                    horizontalOrder: true,
+                    transitionDuration: 0,
+                    initLayout: true,
+                    resize: true
+                });
+
+                await new Promise(resolve => setTimeout(resolve, 100));
+                requestAnimationFrame(() => {
+                    gallery.style.transition = 'opacity 0.1s ease-in-out';
+                    gallery.style.opacity = '1';
+                    gallery.querySelectorAll('.gallery-item').forEach(item => {
+                        item.style.transition = 'transform 0.1s ease-in-out';
+                    });
+                    masonryInstance.layout();
+                });
+            } finally {
+                isLayoutInProgress = false;
+            }
+        }
+
+        function calculateItemWidth() {
+            const containerWidth = gallery.parentElement.offsetWidth;
+            const gutter = 20;
+            const minItemWidth = 200;
+            const columns = Math.max(1, Math.floor((containerWidth + gutter) / (minItemWidth + gutter)));
+            return (containerWidth - (gutter * (columns - 1))) / columns;
+        }
+
+        function createGalleryItem(file) {
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            const imageExtensions = ['gif', 'jpg', 'png'];
+            const videoExtensions = ['mp4'];
+
+            if (!imageExtensions.includes(fileExtension) && !videoExtensions.includes(fileExtension)) return null;
+
+            const galleryItem = document.createElement('div');
+            galleryItem.className = 'gallery-item';
+            galleryItem.style.opacity = '0';
+            galleryItem.style.transition = 'opacity 0.1s ease-in-out';
+
+            if (imageExtensions.includes(fileExtension)) {
+                galleryItem.innerHTML = `
+                    <div class="media-container">
+                        <a href="/output/${file.name}" download="${file.name}" class="download-link">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M7 0h1v1h-1zM8 0h1v1h-1zM7 1h1v1h-1zM8 1h1v1h-1zM7 2h1v1h-1zM8 2h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM11 6h1v1h-1zM12 6h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM11 7h1v1h-1zM12 7h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1zM10 8h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM9 9h1v1h-1zM10 9h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM0 12h1v1h-1zM1 12h1v1h-1zM14 12h1v1h-1zM15 12h1v1h-1zM0 13h1v1h-1zM1 13h1v1h-1zM14 13h1v1h-1zM15 13h1v1h-1zM0 14h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM11 14h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1zM15 14h1v1h-1zM0 15h1v1h-1zM1 15h1v1h-1zM2 15h1v1h-1zM3 15h1v1h-1zM4 15h1v1h-1zM5 15h1v1h-1zM6 15h1v1h-1zM7 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM10 15h1v1h-1zM11 15h1v1h-1zM12 15h1v1h-1zM13 15h1v1h-1zM14 15h1v1h-1zM15 15h1v1h-1z" fill="#060c4d"/></svg>
+                        </a>
+                        <img data-src="/output/${file.name}?cb=${Date.now()}" alt="${file.name}" loading="lazy">
                     </div>
-                    
-                    <div class="gallery"></div>
                 `;
+                const img = galleryItem.querySelector('img');
+                img.addEventListener('click', () => displayLightbox(`/output/${file.name}?cb=${Date.now()}`));
+            } else if (videoExtensions.includes(fileExtension)) {
+                galleryItem.innerHTML = `
+                    <div class="media-container">
+                        <video width="200" controls data-src="/output/${file.name}">
+                            <source type="video/mp4">
+                        </video>
+                    </div>
+                `;
+            }
 
-                document.getElementById('latest-media-button')?.addEventListener('click', displayLatestMediaLightbox);
+            return galleryItem;
+        }
 
-                const gallery = mediaListContainer.querySelector('.gallery');
+        async function loadMediaItem(element) {
+            if (element.tagName.toLowerCase() === 'img') {
+                element.src = element.dataset.src;
+            } else if (element.tagName.toLowerCase() === 'video') {
+                element.querySelector('source').src = element.dataset.src;
+                element.load();
+            }
+        }
 
-                response.files.forEach(file => {
-                    const galleryItem = document.createElement('div');
-                    galleryItem.className = 'gallery-item';
+        async function renderGalleryItems(files, start, limit) {
+            if (isLayoutInProgress) return;
 
-                    const fileExtension = file.name.split('.').pop().toLowerCase();
-                    const imageExtensions = ['gif', 'jpg', 'png'];
-                    const videoExtensions = ['mp4'];
+            showLoadingOverlay('Loading media files...');
+            isLayoutInProgress = true;
 
-                    if (imageExtensions.includes(fileExtension)) {
-                        galleryItem.innerHTML = `
-                            <div class="media-container">
-                                <a href="/output/${file.name}" download="${file.name}" class="download-link">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M7 0h1v1h-1zM8 0h1v1h-1zM7 1h1v1h-1zM8 1h1v1h-1zM7 2h1v1h-1zM8 2h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM11 6h1v1h-1zM12 6h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM11 7h1v1h-1zM12 7h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1zM10 8h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM9 9h1v1h-1zM10 9h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM0 12h1v1h-1zM1 12h1v1h-1zM14 12h1v1h-1zM15 12h1v1h-1zM0 13h1v1h-1zM1 13h1v1h-1zM14 13h1v1h-1zM15 13h1v1h-1zM0 14h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM11 14h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1zM15 14h1v1h-1zM0 15h1v1h-1zM1 15h1v1h-1zM2 15h1v1h-1zM3 15h1v1h-1zM4 15h1v1h-1zM5 15h1v1h-1zM6 15h1v1h-1zM7 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM10 15h1v1h-1zM11 15h1v1h-1zM12 15h1v1h-1zM13 15h1v1h-1zM14 15h1v1h-1zM15 15h1v1h-1z" fill="#060c4d"/></svg>
-                                </a>
-                                <img src="/output/${file.name}?cb=${Date.now()}" alt="${file.name}" loading="lazy">
-                            </div>
-                        `;
-                        const img = galleryItem.querySelector('img');
+            try {
+                if (start === 0) {
+                    gallery.innerHTML = '';
+                    if (masonryInstance) {
+                        masonryInstance.destroy();
+                        masonryInstance = null;
+                    }
+                }
 
-                        if (img) {
-                            img.addEventListener('click', () => {
-                                displayLightbox(`/output/${file.name}?cb=${Date.now()}`);
-                            });
-                        }
+                const fragment = document.createDocumentFragment();
+                const itemsToLoad = files.slice(start, start + limit);
 
-                        gallery.appendChild(galleryItem);
-                    } else if (videoExtensions.includes(fileExtension)) {
-                        galleryItem.innerHTML = `
-                            <div class="media-container">
-                                <video width="300" controls>
-                                    <source src="/output/${file.name}" type="video/mp4">
-                                    Your browser does not support the video tag.
-                                </video>
-                            </div>
-                        `;
-
-                        gallery.appendChild(galleryItem);
+                itemsToLoad.forEach(file => {
+                    const galleryItem = createGalleryItem(file);
+                    if (galleryItem) {
+                        fragment.appendChild(galleryItem);
                     }
                 });
 
-                imagesLoaded(gallery, function () {
-                    initMasonry();
+                gallery.appendChild(fragment);
+
+                masonryInstance = new Masonry(gallery, {
+                    itemSelector: '.gallery-item',
+                    columnWidth: '.gallery-item',
+                    gutter: 20,
+                    percentPosition: false,
+                    horizontalOrder: true,
+                    transitionDuration: 0,
+                    initLayout: true,
+                    resize: true,
+                    stagger: 30,
+                    isInitLayout: true
                 });
-            } else {
-                mediaListContainer.style.display = 'block';
-                mediaListContainer.innerHTML = '<p>No media files available.</p>';
+
+                const mediaElements = Array.from(gallery.querySelectorAll('[data-src]'));
+                for (const element of mediaElements) {
+                    await loadMediaItem(element);
+                    requestAnimationFrame(() => {
+                        const itemWidth = calculateItemWidth();
+                        element.closest('.gallery-item').style.width = `${itemWidth}px`;
+                        element.closest('.gallery-item').style.opacity = '1';
+                        if (masonryInstance) {
+                            masonryInstance.layout();
+                        }
+                    });
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+
+            } catch (error) {
+                console.error('Error rendering gallery items:', error);
+                showStatus('Error loading some media files. Please try refreshing.', false);
+            } finally {
+                isLayoutInProgress = false;
+                const loadingOverlay = document.getElementById('loading-overlay');
+                loadingOverlay.style.display = 'none';
             }
-        } else {
-            throw new Error('Invalid response format');
         }
+
+        if (showMoreButton) {
+            let currentCount = 0;
+
+            showMoreButton.addEventListener('click', async event => {
+                event.preventDefault();
+                if (isLayoutInProgress) return;
+                showMoreButton.disabled = true;
+
+                try {
+                    if (!isExpanded) {
+                        await renderGalleryItems(response.files, 9, response.files.length - 9);
+                        showMoreButton.textContent = 'Show less';
+                        currentCount = response.files.length;
+                    } else {
+                        gallery.innerHTML = '';
+                        await renderGalleryItems(response.files, 0, 9);
+                        showMoreButton.textContent = `Show all (${response.files.length - 9} more)`;
+                        currentCount = 9;
+                    }
+
+                    if (isExpanded) gallery.scrollIntoView({behavior: 'smooth'});
+                    isExpanded = !isExpanded;
+                } finally {
+                    showMoreButton.disabled = false;
+                }
+            });
+        }
+
+        const debouncedResize = debounce(() => {
+            if (gallery.children.length > 0) initializeMasonry();
+        }, 100);
+
+        window.addEventListener('resize', debouncedResize);
+
+        await renderGalleryItems(response.files, 0, 9);
+
     } catch (error) {
         console.error('Error listing media files:', error);
-        showStatus(`Error listing media files: ${error.message || 'Unknown error occurred'}`, false);
+        showStatus('Error loading media files. Please try again.', false);
     }
 }
 

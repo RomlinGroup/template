@@ -385,6 +385,12 @@ textarea {
     cursor: pointer;
 }
 
+.gallery-controls {
+    display: flex;
+    justify-content: center;
+    clear: both;
+}
+
 .handle,
 .move-up,
 .move-down,
@@ -538,7 +544,6 @@ textarea {
 .lightbox-content {
     text-align: center;
     background: var(--color-background);
-    border-radius: 10px;
     position: relative;
     padding: 20px;
     max-width: 90%;
@@ -552,7 +557,6 @@ textarea {
     max-height: auto;
     object-fit: contain;
     border: 1px solid var(--color-light-bg);
-    border-radius: 10px;
     display: block;
     margin: 0 auto;
 }
@@ -745,6 +749,7 @@ textarea {
     font-family: var(--font-family-mono);
     font-size: var(--font-size-base);
     line-height: var(--line-height-base);
+    position: relative;
 }
 
 .toggle-button {
@@ -1152,7 +1157,7 @@ textarea {
 #media-list-container .gallery-item {
     width: 200px;
     float: left;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     display: flex;
     position: relative;
     flex-direction: column;
@@ -1180,7 +1185,6 @@ textarea {
     object-fit: contain;
     object-position: center;
     border: 1px solid #f0f2ff;
-    border-radius: 10px;
 }
 
 #media-list-container .gallery-item img {
@@ -1189,7 +1193,6 @@ textarea {
     object-fit: cover;
     object-position: center;
     border: 1px solid #f0f2ff;
-    border-radius: 10px;
 }
 
 #output-widget {
@@ -1256,6 +1259,15 @@ textarea {
 
 #server-time {
     font-size: var(--font-size-base);
+}
+
+#show-more-button {
+    cursor: pointer;
+    width: 100%;
+    background: #060c4d;
+    font-size: var(--font-size-base);
+    padding: 10px 20px;
+    border: 0px;
 }
 
 #status-bar {
