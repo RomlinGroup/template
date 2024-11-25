@@ -3498,7 +3498,6 @@ async function updateExistingHook(hookId, newHook) {
                 });
                 window.connectionHandler.connections.clear();
 
-                // Restore connections
                 connectionData.forEach(({node1Id, node2Id}) => {
                     const node1 = document.querySelector(`[data-node-id="${node1Id}"]`);
                     const node2 = document.querySelector(`[data-node-id="${node2Id}"]`);
