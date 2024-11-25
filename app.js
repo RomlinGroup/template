@@ -837,7 +837,7 @@ function displayLatestMediaLightbox() {
 
     closeButton.innerHTML = `
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-            <path d="M1 1h1v1h-1zM2 1h1v1h-1zM13 1h1v1h-1zM14 1h1v1h-1zM1 2h1v1h-1zM2 2h1v1h-1zM13 2h1v1h-1zM14 2h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM11 3h1v1h-1zM12 3h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM9 6h1v1h-1zM10 6h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM9 9h1v1h-1zM10 9h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM3 11h1v1h-1zM4 11h1v1h-1zM11 11h1v1h-1zM12 11h1v1h-1zM3 12h1v1h-1zM4 12h1v1h-1zM11 12h1v1h-1zM12 12h1v1h-1zM1 13h1v1h-1zM2 13h1v1h-1zM13 13h1v1h-1zM14 13h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1z" fill="#000000"/>
+            <path d="M1 1h1v1h-1zM2 1h1v1h-1zM13 1h1v1h-1zM14 1h1v1h-1zM1 2h1v1h-1zM2 2h1v1h-1zM13 2h1v1h-1zM14 2h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM11 3h1v1h-1zM12 3h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM9 6h1v1h-1zM10 6h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM9 9h1v1h-1zM10 9h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM3 11h1v1h-1zM4 11h1v1h-1zM11 11h1v1h-1zM12 11h1v1h-1zM3 12h1v1h-1zM4 12h1v1h-1zM11 12h1v1h-1zM12 12h1v1h-1zM1 13h1v1h-1zM2 13h1v1h-1zM13 13h1v1h-1zM14 13h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1z" fill="#ffffff"/>
         </svg>
     `;
 
@@ -954,7 +954,7 @@ function displayLightbox(mediaSrc) {
             <p class="lightbox-filename">${filename}</p>
             <button class="close-lightbox">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-                    <path d="M1 1h1v1h-1zM2 1h1v1h-1zM13 1h1v1h-1zM14 1h1v1h-1zM1 2h1v1h-1zM2 2h1v1h-1zM13 2h1v1h-1zM14 2h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM11 3h1v1h-1zM12 3h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM9 6h1v1h-1zM10 6h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM9 9h1v1h-1zM10 9h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM3 11h1v1h-1zM4 11h1v1h-1zM11 11h1v1h-1zM12 11h1v1h-1zM3 12h1v1h-1zM4 12h1v1h-1zM11 12h1v1h-1zM12 12h1v1h-1zM1 13h1v1h-1zM2 13h1v1h-1zM13 13h1v1h-1zM14 13h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1z" fill="#060c4d"/>
+                    <path d="M1 1h1v1h-1zM2 1h1v1h-1zM13 1h1v1h-1zM14 1h1v1h-1zM1 2h1v1h-1zM2 2h1v1h-1zM13 2h1v1h-1zM14 2h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM11 3h1v1h-1zM12 3h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM9 6h1v1h-1zM10 6h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM9 9h1v1h-1zM10 9h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM3 11h1v1h-1zM4 11h1v1h-1zM11 11h1v1h-1zM12 11h1v1h-1zM3 12h1v1h-1zM4 12h1v1h-1zM11 12h1v1h-1zM12 12h1v1h-1zM1 13h1v1h-1zM2 13h1v1h-1zM13 13h1v1h-1zM14 13h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1z" fill="#ffffff"/>
                 </svg>
             </button>
         </div>
@@ -2279,8 +2279,9 @@ async function listMediaFiles() {
         if (!mediaListContainer) return;
 
         mediaListContainer.innerHTML = '';
+
         if (!response.files?.length) {
-            mediaListContainer.innerHTML = '<p>No media files available.</p>';
+            mediaListContainer.style.display = 'none';
             return;
         }
 
@@ -3379,10 +3380,20 @@ document.getElementById('hook-form').addEventListener('submit', async function (
 
     if (hookName && hookType && hookScript) {
         try {
-            const existingConnections = [...window.connectionHandler.connections].map(conn => ({
-                sourceId: conn.node1.dataset.nodeType !== 'hook' ? conn.node1.dataset.nodeId : conn.node2.dataset.nodeId,
-                targetId: conn.node1.dataset.nodeType === 'hook' ? conn.node1.dataset.nodeId : conn.node2.dataset.nodeId
-            }));
+            const svg = document.querySelector('.connector-svg');
+
+            if (svg) {
+                svg.style.visibility = 'hidden';
+            }
+
+            const existingConnections = [...window.connectionHandler.connections]
+                .filter(conn => conn && conn.node1 && conn.node2)
+                .map(conn => ({
+                    sourceId: conn.node1.dataset.nodeType !== 'hook' ? conn.node1.dataset.nodeId : conn.node2.dataset.nodeId,
+                    targetId: conn.node1.dataset.nodeType === 'hook' ? conn.node1.dataset.nodeId : conn.node2.dataset.nodeId,
+                    sourceType: conn.node1.dataset.nodeType,
+                    targetType: conn.node2.dataset.nodeType
+                }));
 
             const response = await fetch(`${getBaseUrl()}/api/hooks`, {
                 method: 'POST',
@@ -3412,17 +3423,21 @@ document.getElementById('hook-form').addEventListener('submit', async function (
                             show_on_frontpage: showOnFrontpage
                         });
 
+                        await new Promise(resolve => setTimeout(resolve, 50));
+
                         if (window.connectionHandler) {
-                            window.connectionHandler.updateConnections();
                             await window.connectionHandler.loadExistingConnections(existingConnections);
+                            window.connectionHandler.updateConnections();
                         }
                     }
                 } else {
                     await fetchHooks(apiToken);
 
+                    await new Promise(resolve => setTimeout(resolve, 50));
+
                     if (window.connectionHandler) {
-                        window.connectionHandler.updateConnections();
                         await window.connectionHandler.loadExistingConnections(existingConnections);
+                        window.connectionHandler.updateConnections();
                     }
 
                     showStatus('Hook added successfully!', true);
@@ -3430,6 +3445,10 @@ document.getElementById('hook-form').addEventListener('submit', async function (
             } else {
                 const data = await response.json();
                 showStatus(`Error: ${data.detail}`, false);
+            }
+
+            if (svg) {
+                svg.style.visibility = 'visible';
             }
         } catch (error) {
             console.error('Error adding hook:', error);
@@ -3445,6 +3464,16 @@ async function updateExistingHook(hookId, newHook) {
     const csrfToken = localStorage.getItem('csrfToken');
 
     try {
+        const connectionData = [...(window.connectionHandler?.connections || [])].map(conn => ({
+            node1Id: conn.node1.dataset.nodeId,
+            node2Id: conn.node2.dataset.nodeId
+        }));
+
+        const svg = document.querySelector('.connector-svg');
+        if (svg) {
+            svg.style.visibility = 'hidden';
+        }
+
         const response = await fetch(`${getBaseUrl()}/api/hooks/${hookId}`, {
             method: 'PUT',
             headers: {
@@ -3452,17 +3481,40 @@ async function updateExistingHook(hookId, newHook) {
                 'Authorization': `Bearer ${apiToken}`,
                 'X-CSRF-Token': csrfToken
             },
-            body: JSON.stringify({
-                hook_name: newHook.hook_name,
-                hook_type: newHook.hook_type,
-                hook_placement: newHook.hook_placement,
-                hook_script: newHook.hook_script,
-                show_on_frontpage: newHook.show_on_frontpage
-            })
+            body: JSON.stringify(newHook)
         });
 
         if (response.ok) {
-            await fetchHooks(apiToken);
+            const hooks = await callAPI('hooks', apiToken, 'GET');
+            await renderHooks(hooks.hooks);
+
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            if (window.connectionHandler) {
+                window.connectionHandler.connections.forEach(conn => {
+                    if (conn.path) {
+                        conn.path.remove();
+                    }
+                });
+                window.connectionHandler.connections.clear();
+
+                // Restore connections
+                connectionData.forEach(({node1Id, node2Id}) => {
+                    const node1 = document.querySelector(`[data-node-id="${node1Id}"]`);
+                    const node2 = document.querySelector(`[data-node-id="${node2Id}"]`);
+
+                    if (node1 && node2) {
+                        window.connectionHandler.createConnection(node1, node2);
+                    }
+                });
+
+                window.connectionHandler.updateConnections();
+            }
+
+            if (svg) {
+                svg.style.visibility = 'visible';
+            }
+
             showStatus('Hook updated successfully!', true);
         } else {
             const data = await response.json();
@@ -3613,6 +3665,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Tab element is undefined.');
             return;
         }
+
         const tabs = document.querySelectorAll('.tab');
         const tabContents = document.querySelectorAll('.tab-content');
         tabs.forEach((t) => t.classList.remove('active'));
@@ -3625,6 +3678,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             console.error(`Tab content element not found for ${tab.dataset.tab}`);
         }
+
         localStorage.setItem('activeTab', tab.dataset.tab);
         resizeAllTextareas();
 
@@ -3632,6 +3686,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (window.connectionHandler) {
                 window.connectionHandler.toggleConnectionsVisibility(true);
                 window.connectionHandler.loadExistingConnections();
+
+                listMediaFiles().then(() => {
+                    const gallery = document.querySelector('.gallery');
+                    if (gallery && gallery.children.length > 0) {
+                        initializeMasonry();
+                    }
+                });
             }
         } else {
             if (window.connectionHandler) {
