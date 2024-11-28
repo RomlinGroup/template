@@ -1152,20 +1152,15 @@ textarea {
 #media-list-container .gallery {
     width: 100%;
     margin: 0 auto;
+    position: relative;
 }
 
 #media-list-container .gallery-item {
     width: 200px;
-    float: left;
-    margin-bottom: 20px;
-    display: flex;
-    position: relative;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
     background-color: var(--color-background);
     overflow: hidden;
     cursor: pointer;
+    margin-bottom: 20px;
 }
 
 #media-list-container .gallery-item .media-container {
@@ -1184,15 +1179,11 @@ textarea {
     height: auto;
     object-fit: contain;
     object-position: center;
-    border: 1px solid #f0f2ff;
 }
 
 #media-list-container .gallery-item img {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-    border: 1px solid #f0f2ff;
+    height: auto;
 }
 
 #output-widget {

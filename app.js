@@ -28,6 +28,18 @@ const CHECK_INTERVAL = 5000;
 const MAX_CONSECUTIVE_ERRORS = 5;
 const MAX_DISCONNECTED_COUNT = 5;
 
+const MASONRY_CONFIG = {
+    itemSelector: '.gallery-item',
+    columnWidth: '.gallery-item',
+    gutter: 20,
+    percentPosition: false,
+    horizontalOrder: true,
+    transitionDuration: 100,
+    initLayout: false,
+    fitWidth: true,
+    resize: true
+};
+
 const getBaseUrl = () => window.location.origin;
 
 const addCommentIcon = `
@@ -302,6 +314,11 @@ function addEventListenersToEditor(editor) {
             resizeEditor(event.target);
         }
     });
+
+    editor.addEventListener('wheel', () => {
+        resizeEditor(editor);
+    }, {passive: true});
+
     editor.addEventListener('paste', stripFormatting);
 }
 
@@ -2258,6 +2275,8 @@ async function initializeApp(apiToken) {
             loadEvalAndOutputFiles(apiToken)
         ]);
 
+        window.initialLoadComplete = true;
+
         initBuildStatusCheck();
         setInterval(() => checkHeartbeat(apiToken), 1000);
 
@@ -2273,8 +2292,8 @@ async function initializeApp(apiToken) {
 
 async function listMediaFiles() {
     try {
-        const response = await callAPI('list-media-files', localStorage.getItem('apiToken'), 'GET');
         const mediaListContainer = document.getElementById('media-list-container');
+        const response = await callAPI('list-media-files', localStorage.getItem('apiToken'), 'GET');
 
         if (!mediaListContainer) return;
 
@@ -2286,6 +2305,7 @@ async function listMediaFiles() {
         }
 
         mediaListContainer.style.display = 'block';
+
         mediaListContainer.innerHTML = `
             <div id="gallery-header">
                 <div id="latest-media-button">Play</div>
@@ -2305,7 +2325,18 @@ async function listMediaFiles() {
 
         const gallery = mediaListContainer.querySelector('.gallery');
         const showMoreButton = document.getElementById('show-more-button');
+
         let masonryInstance = null;
+
+        async function updateContainerHeight() {
+            const items = gallery.querySelectorAll('.gallery-item');
+            let maxHeight = 0;
+            items.forEach(item => {
+                const bottom = item.offsetTop + item.offsetHeight;
+                maxHeight = Math.max(maxHeight, bottom);
+            });
+            gallery.style.height = `${maxHeight}px`;
+        }
 
         async function initializeMasonry() {
             if (isLayoutInProgress) return;
@@ -2313,8 +2344,6 @@ async function listMediaFiles() {
 
             try {
                 if (masonryInstance) masonryInstance.destroy();
-                gallery.style.opacity = '0';
-                gallery.style.transition = 'none';
                 const itemWidth = calculateItemWidth();
                 gallery.querySelectorAll('.gallery-item').forEach(item => {
                     item.style.width = `${itemWidth}px`;
@@ -2329,24 +2358,9 @@ async function listMediaFiles() {
                     }
                 })));
 
-                masonryInstance = new Masonry(gallery, {
-                    itemSelector: '.gallery-item',
-                    columnWidth: '.gallery-item',
-                    gutter: 20,
-                    percentPosition: false,
-                    horizontalOrder: true,
-                    transitionDuration: 0,
-                    initLayout: true,
-                    resize: true
-                });
+                masonryInstance = new Masonry(gallery, MASONRY_CONFIG);
 
-                await new Promise(resolve => setTimeout(resolve, 100));
                 requestAnimationFrame(() => {
-                    gallery.style.transition = 'opacity 0.1s ease-in-out';
-                    gallery.style.opacity = '1';
-                    gallery.querySelectorAll('.gallery-item').forEach(item => {
-                        item.style.transition = 'transform 0.1s ease-in-out';
-                    });
                     masonryInstance.layout();
                 });
             } finally {
@@ -2356,10 +2370,10 @@ async function listMediaFiles() {
 
         function calculateItemWidth() {
             const containerWidth = gallery.parentElement.offsetWidth;
-            const gutter = 20;
+            const gutterWidth = 20;
             const minItemWidth = 200;
-            const columns = Math.max(1, Math.floor((containerWidth + gutter) / (minItemWidth + gutter)));
-            return (containerWidth - (gutter * (columns - 1))) / columns;
+            const columns = Math.max(1, Math.floor(containerWidth / minItemWidth));
+            return (containerWidth - (gutterWidth * (columns - 1))) / columns;
         }
 
         function createGalleryItem(file) {
@@ -2372,27 +2386,27 @@ async function listMediaFiles() {
             const galleryItem = document.createElement('div');
             galleryItem.className = 'gallery-item';
             galleryItem.style.opacity = '0';
-            galleryItem.style.transition = 'opacity 0.1s ease-in-out';
+            galleryItem.style.transition = 'none';
 
             if (imageExtensions.includes(fileExtension)) {
                 galleryItem.innerHTML = `
-                    <div class="media-container">
-                        <a href="/output/${file.name}" download="${file.name}" class="download-link">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M7 0h1v1h-1zM8 0h1v1h-1zM7 1h1v1h-1zM8 1h1v1h-1zM7 2h1v1h-1zM8 2h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM11 6h1v1h-1zM12 6h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM11 7h1v1h-1zM12 7h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1zM10 8h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM9 9h1v1h-1zM10 9h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM0 12h1v1h-1zM1 12h1v1h-1zM14 12h1v1h-1zM15 12h1v1h-1zM0 13h1v1h-1zM1 13h1v1h-1zM14 13h1v1h-1zM15 13h1v1h-1zM0 14h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM11 14h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1zM15 14h1v1h-1zM0 15h1v1h-1zM1 15h1v1h-1zM2 15h1v1h-1zM3 15h1v1h-1zM4 15h1v1h-1zM5 15h1v1h-1zM6 15h1v1h-1zM7 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM10 15h1v1h-1zM11 15h1v1h-1zM12 15h1v1h-1zM13 15h1v1h-1zM14 15h1v1h-1zM15 15h1v1h-1z" fill="#060c4d"/></svg>
-                        </a>
-                        <img data-src="/output/${file.name}?cb=${Date.now()}" alt="${file.name}" loading="lazy">
-                    </div>
-                `;
+            <div class="media-container">
+                <a href="/output/${file.name}" download="${file.name}" class="download-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M7 0h1v1h-1zM8 0h1v1h-1zM7 1h1v1h-1zM8 1h1v1h-1zM7 2h1v1h-1zM8 2h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM11 6h1v1h-1zM12 6h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM11 7h1v1h-1zM12 7h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1zM10 8h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM9 9h1v1h-1zM10 9h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM0 12h1v1h-1zM1 12h1v1h-1zM14 12h1v1h-1zM15 12h1v1h-1zM0 13h1v1h-1zM1 13h1v1h-1zM14 13h1v1h-1zM15 13h1v1h-1zM0 14h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM11 14h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1zM15 14h1v1h-1zM0 15h1v1h-1zM1 15h1v1h-1zM2 15h1v1h-1zM3 15h1v1h-1zM4 15h1v1h-1zM5 15h1v1h-1zM6 15h1v1h-1zM7 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM10 15h1v1h-1zM11 15h1v1h-1zM12 15h1v1h-1zM13 15h1v1h-1zM14 15h1v1h-1zM15 15h1v1h-1z" fill="#060c4d"/></svg>
+                </a>
+                <img data-src="/output/${file.name}?cb=${Date.now()}" alt="${file.name}" loading="lazy">
+            </div>
+        `;
                 const img = galleryItem.querySelector('img');
                 img.addEventListener('click', () => displayLightbox(`/output/${file.name}?cb=${Date.now()}`));
             } else if (videoExtensions.includes(fileExtension)) {
                 galleryItem.innerHTML = `
-                    <div class="media-container">
-                        <video width="200" controls data-src="/output/${file.name}">
-                            <source type="video/mp4">
-                        </video>
-                    </div>
-                `;
+            <div class="media-container">
+                <video width="200" controls data-src="/output/${file.name}">
+                    <source type="video/mp4">
+                </video>
+            </div>
+        `;
             }
 
             return galleryItem;
@@ -2434,30 +2448,25 @@ async function listMediaFiles() {
 
                 gallery.appendChild(fragment);
 
-                masonryInstance = new Masonry(gallery, {
-                    itemSelector: '.gallery-item',
-                    columnWidth: '.gallery-item',
-                    gutter: 20,
-                    percentPosition: false,
-                    horizontalOrder: true,
-                    transitionDuration: 0,
-                    initLayout: true,
-                    resize: true,
-                    stagger: 30,
-                    isInitLayout: true
-                });
+                masonryInstance = new Masonry(gallery, MASONRY_CONFIG);
 
                 const mediaElements = Array.from(gallery.querySelectorAll('[data-src]'));
+
                 for (const element of mediaElements) {
                     await loadMediaItem(element);
+
+                    const item = element.closest('.gallery-item');
+                    const itemWidth = calculateItemWidth();
+                    item.style.width = `${itemWidth}px`;
+
                     requestAnimationFrame(() => {
-                        const itemWidth = calculateItemWidth();
-                        element.closest('.gallery-item').style.width = `${itemWidth}px`;
-                        element.closest('.gallery-item').style.opacity = '1';
+                        item.style.transition = 'opacity 0.2s ease-in-out';
+                        item.style.opacity = '1';
                         if (masonryInstance) {
                             masonryInstance.layout();
                         }
                     });
+
                     await new Promise(resolve => setTimeout(resolve, 50));
                 }
 
@@ -2476,7 +2485,9 @@ async function listMediaFiles() {
 
             showMoreButton.addEventListener('click', async event => {
                 event.preventDefault();
+
                 if (isLayoutInProgress) return;
+
                 showMoreButton.disabled = true;
 
                 try {
@@ -2487,6 +2498,8 @@ async function listMediaFiles() {
                     } else {
                         gallery.innerHTML = '';
                         await renderGalleryItems(response.files, 0, 9);
+                        await initializeMasonry();
+
                         showMoreButton.textContent = `Show all (${response.files.length - 9} more)`;
                         currentCount = 9;
                     }
@@ -2499,13 +2512,17 @@ async function listMediaFiles() {
             });
         }
 
+        await renderGalleryItems(response.files, 0, 9);
+
+        if (gallery.children.length > 0) {
+            initializeMasonry();
+        }
+
         const debouncedResize = debounce(() => {
             if (gallery.children.length > 0) initializeMasonry();
         }, 100);
 
         window.addEventListener('resize', debouncedResize);
-
-        await renderGalleryItems(response.files, 0, 9);
 
     } catch (error) {
         console.error('Error listing media files:', error);
@@ -3686,12 +3703,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.connectionHandler.toggleConnectionsVisibility(true);
                 window.connectionHandler.loadExistingConnections();
 
-                listMediaFiles().then(() => {
-                    const gallery = document.querySelector('.gallery');
-                    if (gallery && gallery.children.length > 0) {
-                        initializeMasonry();
-                    }
-                });
+                if (window.initialLoadComplete) {
+                    listMediaFiles();
+                }
             }
         } else {
             if (window.connectionHandler) {
