@@ -145,15 +145,15 @@ textarea {
 
 .close-lightbox {
     position: absolute;
-    background: #5865f2;
-    border: 1px solid #5865f2;
-    border-radius: 50%;
-    padding: 5px;
     top: 10px;
     right: 10px;
+    background: #fff;
+    border: 0px;
+    border-radius: 50%;
+    padding: 5px;
+    justify-content: center;
     display: flex;
     align-items: center;
-    justify-content: center;
     cursor: pointer;
 }
 
@@ -291,12 +291,13 @@ textarea {
     top: 10px;
     right: 10px;
     background: #fff;
-    border: 1px solid #f0f2ff;
+    border: 0px;
     border-radius: 50%;
     padding: 5px;
     justify-content: center;
     display: flex;
     align-items: center;
+    cursor: pointer;
 }
 
 .editor {
@@ -543,9 +544,8 @@ textarea {
 
 .lightbox-content {
     text-align: center;
-    background: var(--color-background);
     position: relative;
-    padding: 20px;
+    padding: 0px;
     max-width: 90%;
     max-height: 90%;
     overflow: auto;
@@ -556,7 +556,6 @@ textarea {
     max-width: 400px;
     max-height: auto;
     object-fit: contain;
-    border: 1px solid var(--color-light-bg);
     display: block;
     margin: 0 auto;
 }
@@ -567,7 +566,7 @@ textarea {
     line-height: var(--line-height-base);
     text-align: center;
     word-break: break-all;
-    margin-top: 20px;
+    margin-top: 10px;
 }
 
 .media-button {
@@ -1172,6 +1171,10 @@ textarea {
     justify-content: center;
 }
 
+#media-list-container .gallery-item .media-container a {
+    z-index: 1;
+}
+
 #media-list-container .gallery-item .media-container video {
     max-width: 100%;
     max-height: 100%;
@@ -1404,10 +1407,6 @@ textarea {
 
     #toolbar {
         border-bottom: 1px solid var(--color-primary);
-    }
-
-    .lightbox-content img {
-        border: 1px solid #ffffff;
     }
 
     .node-content {
