@@ -2262,14 +2262,16 @@ async function initializeApp(apiToken) {
         await new Promise(resolve => setTimeout(resolve, 150));
 
         const activeTab = localStorage.getItem('activeTab') || 'board';
+
         if (activeTab === 'board' && window.connectionHandler) {
             window.connectionHandler.toggleConnectionsVisibility(true);
             await window.connectionHandler.loadExistingConnections();
             window.connectionHandler.updateConnections();
+
+            listMediaFiles(apiToken);
         }
 
         await Promise.all([
-            listMediaFiles(apiToken),
             fetchLatestLogs(apiToken),
             fetchSchedule(apiToken),
             loadEvalAndOutputFiles(apiToken)
