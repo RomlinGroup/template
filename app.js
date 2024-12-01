@@ -2301,7 +2301,13 @@ async function listMediaFiles() {
 
         mediaListContainer.innerHTML = '';
 
-        if (!response.files?.length) {
+        const validExtensions = ['gif', 'jpg', 'png', 'mp4'];
+        const validFiles = response.files.filter(file => {
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            return validExtensions.includes(fileExtension);
+        });
+
+        if (!validFiles.length) {
             mediaListContainer.style.display = 'none';
             return;
         }
@@ -2311,13 +2317,13 @@ async function listMediaFiles() {
         mediaListContainer.innerHTML = `
             <div id="gallery-header">
                 <div id="latest-media-button">Play</div>
-                <div class="media-count">Media: ${response.files.length}</div>
+                <div class="media-count">Media: ${validFiles.length}</div>
             </div>
             <div class="gallery"></div>
-            ${response.files.length > 9 ? `
+            ${validFiles.length > 9 ? `
                 <div class="gallery-controls">
                     <button id="show-more-button" class="gallery-control-button">
-                        Show all (${response.files.length - 9} more)
+                        Show all (${validFiles.length - 9} more)
                     </button>
                 </div>
             ` : ''}
@@ -2497,15 +2503,15 @@ async function listMediaFiles() {
 
                 try {
                     if (!isExpanded) {
-                        await renderGalleryItems(response.files, 9, response.files.length - 9);
+                        await renderGalleryItems(validFiles, 9, validFiles.length - 9);
                         showMoreButton.textContent = 'Show less';
-                        currentCount = response.files.length;
+                        currentCount = validFiles.length;
                     } else {
                         gallery.innerHTML = '';
-                        await renderGalleryItems(response.files, 0, 9);
+                        await renderGalleryItems(validFiles, 0, 9);
                         await initializeMasonry();
 
-                        showMoreButton.textContent = `Show all (${response.files.length - 9} more)`;
+                        showMoreButton.textContent = `Show all (${validFiles.length - 9} more)`;
                         currentCount = 9;
                     }
 
@@ -2517,7 +2523,7 @@ async function listMediaFiles() {
             });
         }
 
-        await renderGalleryItems(response.files, 0, 9);
+        await renderGalleryItems(validFiles, 0, 9);
 
         if (gallery.children.length > 0) {
             initializeMasonry();
