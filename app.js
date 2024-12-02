@@ -1024,7 +1024,7 @@ async function fetchAndDisplayTextFile(file, container) {
         const trimmedContent = content.trim();
 
         const preElement = document.createElement('pre');
-        preElement.textContent = trimmedContent;
+        preElement.textContent = `[Generated with AI] ${trimmedContent}`;
         preElement.classList.add('teletext-style');
 
         const existingContent = Array.from(container.getElementsByClassName('text-file-output'));
