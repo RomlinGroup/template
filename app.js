@@ -1147,7 +1147,15 @@ async function fetchEvalData() {
                 'text/plain': 2,
                 'audio/x-wav': 3
             };
-            return (typeOrder[a.type] || 99) - (typeOrder[b.type] || 99);
+
+            const getTypeOrder = (type) => {
+                if (type.startsWith('text/')) {
+                    return 2;
+                }
+                return typeOrder[type] || 99;
+            };
+
+            return getTypeOrder(a.type) - getTypeOrder(b.type);
         });
 
         for (const file of sortedFiles) {
@@ -1157,7 +1165,7 @@ async function fetchEvalData() {
 
             const sanitizedPublicPath = encodeURI(file.public);
 
-            if (file.type === 'text/plain' && file.public.endsWith('output.txt')) {
+            if (file.type.startsWith('text/') && file.public.endsWith('output.txt')) {
                 await fetchAndDisplayTextFile({...file, public: sanitizedPublicPath}, outputWidget);
                 hasOutput = true;
             } else if (file.type === 'audio/x-wav' && file.public.endsWith('output.wav')) {
