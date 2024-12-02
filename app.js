@@ -1580,15 +1580,6 @@ async function handleCSRFError() {
     }
 }
 
-function handleHookConflict(existingHook, newHook) {
-    const confirmUpdate = confirm(`A hook with the name "${newHook.hook_name}" already exists. Do you want to update it?`);
-    if (confirmUpdate) {
-        updateExistingHook(existingHook.id, newHook);
-    } else {
-        showStatus('Hook not added. Please choose a different name.', false);
-    }
-}
-
 function hideLoadingOverlay() {
     const loadingOverlay = document.getElementById('loading-overlay');
     loadingOverlay.style.display = 'none';
@@ -3448,39 +3439,30 @@ document.getElementById('hook-form').addEventListener('submit', async function (
             });
 
             if (response.ok) {
-                const data = await response.json();
-                if (data.existing_hook) {
-                    if (confirm(`A hook with the name "${hookName}" already exists. Do you want to update it?`)) {
-                        await updateExistingHook(data.existing_hook.id, {
-                            hook_name: hookName,
-                            hook_type: hookType,
-                            hook_placement: hookPlacement,
-                            hook_script: hookScript,
-                            show_on_frontpage: showOnFrontpage
-                        });
+                await fetchHooks(apiToken);
 
-                        await new Promise(resolve => setTimeout(resolve, 50));
+                await new Promise(resolve => setTimeout(resolve, 50));
 
-                        if (window.connectionHandler) {
-                            await window.connectionHandler.loadExistingConnections(existingConnections);
-                            window.connectionHandler.updateConnections();
-                        }
-                    }
-                } else {
-                    await fetchHooks(apiToken);
-
-                    await new Promise(resolve => setTimeout(resolve, 50));
-
-                    if (window.connectionHandler) {
-                        await window.connectionHandler.loadExistingConnections(existingConnections);
-                        window.connectionHandler.updateConnections();
-                    }
-
-                    showStatus('Hook added successfully!', true);
+                if (window.connectionHandler) {
+                    await window.connectionHandler.loadExistingConnections(existingConnections);
+                    window.connectionHandler.updateConnections();
                 }
+
+                showStatus('Hook added successfully!', true);
             } else {
-                const data = await response.json();
-                showStatus(`Error: ${data.detail}`, false);
+                if (response.status === 409) {
+                    showStatus(`A hook with the name "${hookName}" already exists. Please choose a different name.`, false);
+                } else {
+                    let errorMessage = 'An error occurred.';
+                    try {
+                        const data = await response.json();
+                        if (data && data.detail) {
+                            errorMessage = data.detail;
+                        }
+                    } catch (e) {
+                    }
+                    showStatus(`Error: ${errorMessage}`, false);
+                }
             }
 
             if (svg) {
