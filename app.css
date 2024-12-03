@@ -90,23 +90,6 @@ textarea {
     margin-right: 10px;
 }
 
-.audio-file-output {
-    margin-top: 20px;
-}
-
-.audio-file-output audio {
-    width: 100%;
-}
-
-.audio-file-output audio::-webkit-media-controls-play-button,
-.audio-file-output audio::-webkit-media-controls-pause-button {
-    border-radius: 0;
-}
-
-.audio-file-output audio::-moz-media-controls {
-    border-radius: 0;
-}
-
 .checkbox-group {
     display: flex;
     align-items: center;
@@ -744,13 +727,6 @@ textarea {
     width: 100%;
 }
 
-.teletext-style {
-    font-family: var(--font-family-mono);
-    font-size: var(--font-size-base);
-    line-height: var(--line-height-base);
-    position: relative;
-}
-
 .toggle-button {
     align-items: center;
     background: var(--color-background);
@@ -1033,7 +1009,6 @@ textarea {
 
 #heartbeat-time {
     color: #ffffff;
-    width: 55px;
 }
 
 #hooks,
@@ -1189,6 +1164,11 @@ textarea {
     height: auto;
 }
 
+#output-content audio {
+    margin-top: 20px;
+    width: 100%;
+}
+
 #output-widget {
     color: #ffffff;
     background: var(--color-primary);
@@ -1197,8 +1177,6 @@ textarea {
     font-size: var(--font-size-base);
     line-height: var(--line-height-base);
     position: relative;
-    max-height: 250px;
-    overflow: scroll;
 }
 
 #output-widget.fullscreen {
@@ -1213,17 +1191,6 @@ textarea {
     margin-top: 0px;
     padding: 20px;
     overflow: auto;
-}
-
-#output-widget.fullscreen .audio-file-output {
-    max-width: 718px;
-    margin: 0 auto;
-    margin-top: 20px;
-}
-
-#output-widget.fullscreen .text-file-output-wrapper {
-    max-width: 718px;
-    margin: 0 auto;
 }
 
 #output-widget.text-file-output {

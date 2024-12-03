@@ -62,10 +62,6 @@ const editorTrashIcon = `
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM7 0h1v1h-1zM8 0h1v1h-1zM9 0h1v1h-1zM10 0h1v1h-1zM11 0h1v1h-1zM12 0h1v1h-1zM13 0h1v1h-1zM2 1h1v1h-1zM3 1h1v1h-1zM4 1h1v1h-1zM5 1h1v1h-1zM6 1h1v1h-1zM7 1h1v1h-1zM8 1h1v1h-1zM9 1h1v1h-1zM10 1h1v1h-1zM11 1h1v1h-1zM12 1h1v1h-1zM13 1h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM10 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM2 5h1v1h-1zM3 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM11 5h1v1h-1zM12 5h1v1h-1zM13 5h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM12 6h1v1h-1zM13 6h1v1h-1zM2 7h1v1h-1zM3 7h1v1h-1zM12 7h1v1h-1zM13 7h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM12 8h1v1h-1zM13 8h1v1h-1zM2 9h1v1h-1zM3 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM12 9h1v1h-1zM13 9h1v1h-1zM2 10h1v1h-1zM3 10h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM12 10h1v1h-1zM13 10h1v1h-1zM2 11h1v1h-1zM3 11h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM12 11h1v1h-1zM13 11h1v1h-1zM2 12h1v1h-1zM3 12h1v1h-1zM12 12h1v1h-1zM13 12h1v1h-1zM2 13h1v1h-1zM3 13h1v1h-1zM12 13h1v1h-1zM13 13h1v1h-1zM2 14h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM11 14h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM2 15h1v1h-1zM3 15h1v1h-1zM4 15h1v1h-1zM5 15h1v1h-1zM6 15h1v1h-1zM7 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM10 15h1v1h-1zM11 15h1v1h-1zM12 15h1v1h-1zM13 15h1v1h-1z" fill="#5865f2"/></svg>
 `;
 
-const fullscreenIcon = `
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5 0h1v1h-1zM6 0h1v1h-1zM9 0h1v1h-1zM10 0h1v1h-1zM5 1h1v1h-1zM6 1h1v1h-1zM9 1h1v1h-1zM10 1h1v1h-1zM7 2h1v1h-1zM8 2h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM10 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM2 5h1v1h-1zM3 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM11 5h1v1h-1zM12 5h1v1h-1zM13 5h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM12 6h1v1h-1zM13 6h1v1h-1zM2 7h1v1h-1zM3 7h1v1h-1zM12 7h1v1h-1zM13 7h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM12 8h1v1h-1zM13 8h1v1h-1zM2 9h1v1h-1zM3 9h1v1h-1zM12 9h1v1h-1zM13 9h1v1h-1zM2 10h1v1h-1zM3 10h1v1h-1zM12 10h1v1h-1zM13 10h1v1h-1zM2 11h1v1h-1zM3 11h1v1h-1zM12 11h1v1h-1zM13 11h1v1h-1zM2 12h1v1h-1zM3 12h1v1h-1zM4 12h1v1h-1zM5 12h1v1h-1zM6 12h1v1h-1zM7 12h1v1h-1zM8 12h1v1h-1zM9 12h1v1h-1zM10 12h1v1h-1zM11 12h1v1h-1zM12 12h1v1h-1zM13 12h1v1h-1zM2 13h1v1h-1zM3 13h1v1h-1zM4 13h1v1h-1zM5 13h1v1h-1zM6 13h1v1h-1zM7 13h1v1h-1zM8 13h1v1h-1zM9 13h1v1h-1zM10 13h1v1h-1zM11 13h1v1h-1zM12 13h1v1h-1zM13 13h1v1h-1z" fill="#ffffff"/></svg>
-`;
-
 const hooksTrashIcon = `
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM7 0h1v1h-1zM8 0h1v1h-1zM9 0h1v1h-1zM10 0h1v1h-1zM11 0h1v1h-1zM12 0h1v1h-1zM13 0h1v1h-1zM2 1h1v1h-1zM3 1h1v1h-1zM4 1h1v1h-1zM5 1h1v1h-1zM6 1h1v1h-1zM7 1h1v1h-1zM8 1h1v1h-1zM9 1h1v1h-1zM10 1h1v1h-1zM11 1h1v1h-1zM12 1h1v1h-1zM13 1h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM10 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM2 5h1v1h-1zM3 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM11 5h1v1h-1zM12 5h1v1h-1zM13 5h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM12 6h1v1h-1zM13 6h1v1h-1zM2 7h1v1h-1zM3 7h1v1h-1zM12 7h1v1h-1zM13 7h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM12 8h1v1h-1zM13 8h1v1h-1zM2 9h1v1h-1zM3 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM12 9h1v1h-1zM13 9h1v1h-1zM2 10h1v1h-1zM3 10h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM12 10h1v1h-1zM13 10h1v1h-1zM2 11h1v1h-1zM3 11h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM12 11h1v1h-1zM13 11h1v1h-1zM2 12h1v1h-1zM3 12h1v1h-1zM12 12h1v1h-1zM13 12h1v1h-1zM2 13h1v1h-1zM3 13h1v1h-1zM12 13h1v1h-1zM13 13h1v1h-1zM2 14h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM11 14h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM2 15h1v1h-1zM3 15h1v1h-1zM4 15h1v1h-1zM5 15h1v1h-1zM6 15h1v1h-1zM7 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM10 15h1v1h-1zM11 15h1v1h-1zM12 15h1v1h-1zM13 15h1v1h-1z" fill="#060c4d"/></svg>
 `;
@@ -109,13 +105,11 @@ async function abortBuild(apiToken) {
                 stopBuildStatusCheck();
                 hideLoadingOverlay();
                 enableInteractions();
-                exitFullscreen();
             } else if (response.message === "Attempted force abort with errors.") {
                 showStatus('Build aborted with some errors.', false);
                 stopBuildStatusCheck();
                 hideLoadingOverlay();
                 enableInteractions();
-                exitFullscreen();
             } else {
                 showStatus(response.message, false);
             }
@@ -559,7 +553,7 @@ async function checkHeartbeat(apiToken) {
         const data = await callAPI('heartbeat', apiToken, 'GET');
         const date = new Date(data.server_time);
         const formattedDate = date.toLocaleString('sv-SE', {
-            hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+            hour: '2-digit', minute: '2-digit', hour12: false
         });
         heartbeatTime.textContent = formattedDate;
         heartbeatDot.classList.remove('disconnected');
@@ -838,6 +832,12 @@ function displayAudioFile(file, container) {
     audioElement.controls = true;
     audioElement.autoplay = false;
     audioElement.src = `${file.public}?cb=${timestamp}`;
+
+    if (container && container instanceof HTMLElement) {
+        container.appendChild(audioElement);
+    } else {
+        console.error('Invalid container specified');
+    }
 }
 
 function displayLatestMediaLightbox() {
@@ -993,13 +993,6 @@ function enableInteractions() {
     });
 }
 
-function exitFullscreen() {
-    const outputWidget = document.getElementById('output-widget');
-    if (outputWidget && outputWidget.classList.contains('fullscreen')) {
-        outputWidget.classList.remove('fullscreen');
-    }
-}
-
 async function fetchAndDisplayTextFile(file, container) {
     try {
         const timestamp = new Date().getTime();
@@ -1013,39 +1006,15 @@ async function fetchAndDisplayTextFile(file, container) {
             throw new Error(`Error fetching ${file.public}: ${response.status} ${response.statusText}`);
         }
 
-        const lastModified = response.headers.get('Last-Modified');
-        let formattedTimestamp = "Unknown";
-
-        if (lastModified) {
-            const modifiedDate = new Date(lastModified);
-        }
-
         const content = await response.text();
-        const trimmedContent = content.trim();
 
         const preElement = document.createElement('pre');
-        preElement.textContent = `[Generated with AI] ${trimmedContent}`;
-        preElement.classList.add('teletext-style');
-
-        const existingContent = Array.from(container.getElementsByClassName('text-file-output'));
-        let contentAlreadyExists = false;
-
-        existingContent.forEach((element) => {
-            if (element.querySelector('pre').textContent === trimmedContent) {
-                contentAlreadyExists = true;
-            }
-        });
-
-        if (!contentAlreadyExists) {
-            const fileContainer = document.createElement('div');
-            fileContainer.classList.add('text-file-output-wrapper');
-
-            fileContainer.appendChild(preElement);
-            container.appendChild(fileContainer);
-        }
+        preElement.textContent = `[Generated with AI] ${content.trim()}`;
+        container.appendChild(preElement);
     } catch (error) {
         console.error('Error fetching text file:', error);
-        container.innerHTML += `<p>Error reading ${escapeHTML(file.public)}: ${escapeHTML(error.message)}</p>`;
+
+        container.innerHTML = `<p>Error reading ${escapeHTML(file.public)}: ${escapeHTML(error.message)}</p>`;
     }
 }
 
@@ -1122,11 +1091,13 @@ async function fetchEvalData() {
         }
 
         const data = await response.json();
+
         if (!Array.isArray(data)) {
             throw new TypeError('Invalid data format: Expected an array of files');
         }
 
         const outputWidget = document.getElementById('output-widget');
+        const outputContent = document.getElementById('output-content');
         const evalWidget = document.getElementById('eval-widget');
 
         if (!outputWidget || !evalWidget) {
@@ -1134,16 +1105,16 @@ async function fetchEvalData() {
             return;
         }
 
-        outputWidget.innerHTML = '';
+        outputContent.innerHTML = '';
         evalWidget.innerHTML = '';
 
         let hasOutput = false;
 
         const sortedFiles = data.sort((a, b) => {
             const typeOrder = {
-                'image/png': 1,
-                'image/jpeg': 1,
                 'image/gif': 1,
+                'image/jpeg': 1,
+                'image/png': 1,
                 'text/plain': 2,
                 'audio/x-wav': 3
             };
@@ -1163,40 +1134,35 @@ async function fetchEvalData() {
                 continue;
             }
 
+            console.log(file.type);
+
             const sanitizedPublicPath = encodeURI(file.public);
 
             if (file.type.startsWith('text/') && file.public.endsWith('output.txt')) {
-                await fetchAndDisplayTextFile({...file, public: sanitizedPublicPath}, outputWidget);
+                await fetchAndDisplayTextFile({...file, public: sanitizedPublicPath}, outputContent);
                 hasOutput = true;
             } else if (file.type === 'audio/x-wav' && file.public.endsWith('output.wav')) {
-                displayAudioFile({...file, public: sanitizedPublicPath}, outputWidget);
+                console.log("Calling displayAudioFile");
+
+                displayAudioFile({...file, public: sanitizedPublicPath}, outputContent);
                 hasOutput = true;
             }
         }
 
         if (!hasOutput) {
-            outputWidget.innerHTML = '<p>No output available.</p>';
-            evalWidget.innerHTML = '<p>No eval_data.json available</p>';
+            outputContent.innerHTML = 'No output available.';
+            evalWidget.innerHTML = 'No eval_data.json available';
         } else {
             outputWidget.classList.add('text-file-output');
-
-            const fullscreenButton = document.createElement('button');
-            fullscreenButton.classList.add('fullscreen-toggle-btn');
-            fullscreenButton.innerHTML = fullscreenIcon;
-
-            fullscreenButton.addEventListener('click', () => {
-                outputWidget.classList.toggle('fullscreen');
-            });
-
-            outputWidget.appendChild(fullscreenButton);
         }
 
         evalWidget.innerHTML = `<pre>${escapeHTML(JSON.stringify(data, null, 2))}</pre>`;
     } catch (error) {
         console.error('Error in fetchEvalData:', error);
         const evalWidget = document.getElementById('eval-widget');
+
         if (evalWidget) {
-            evalWidget.innerHTML = `<p>Could not load eval_data.json: ${escapeHTML(error.message)}</p>`;
+            evalWidget.innerHTML = `Could not load eval_data.json: ${escapeHTML(error.message)}`;
         }
     } finally {
         isFetchingEvalData = false;
@@ -1546,7 +1512,6 @@ function handleBuildStatus(status) {
                 fetchSchedule();
                 listMediaFiles();
                 localStorage.removeItem('buildStatus');
-                exitFullscreen();
                 break;
             case 'no_builds':
                 hideLoadingOverlay();
@@ -1585,12 +1550,11 @@ function hideLoadingOverlay() {
     loadingOverlay.style.display = 'none';
 
     const abortButton = document.getElementById('abort-build-button');
+
     if (abortButton) {
         abortButton.style.display = 'none';
         abortButton.disabled = true;
     }
-
-    exitFullscreen();
 }
 
 function highlightBlock(blockId) {
@@ -2279,7 +2243,7 @@ async function initializeApp(apiToken) {
         window.initialLoadComplete = true;
 
         initBuildStatusCheck();
-        setInterval(() => checkHeartbeat(apiToken), 1000);
+        setInterval(() => checkHeartbeat(apiToken), 5000);
 
     } catch (error) {
         console.error('Error initializing app:', error);
@@ -3572,6 +3536,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, {passive: true});
 
     document.getElementById('latest-media-button')?.addEventListener('click', displayLatestMediaLightbox);
+
+    const outputWidget = document.getElementById('output-widget');
+    const fullscreenButton = outputWidget.querySelector('.fullscreen-toggle-btn');
+
+    if (fullscreenButton) {
+        fullscreenButton.addEventListener('click', () => {
+            outputWidget.classList.toggle('fullscreen');
+        });
+    }
 
     if (document.querySelector('.tab[data-tab="hooks"]')) {
         document.querySelector('.tab[data-tab="hooks"]').addEventListener('click', () => {
