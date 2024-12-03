@@ -747,6 +747,16 @@ textarea {
     width: 16px;
 }
 
+.trigger-button {
+    background: var(--color-tertiary);
+    color: #ffffff;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
 .update-hook {
     padding: 0;
     border: none;
@@ -1186,7 +1196,6 @@ textarea {
     width: 100vw;
     height: 100vh;
     max-height: 100vh;
-    background-color: var(--color-background);
     z-index: 2147483646;
     margin-top: 0px;
     padding: 20px;

@@ -77,6 +77,7 @@ const regularEyeIcon = `
 let buildStatusCleared = false;
 let buildStatusInterval;
 let consecutiveErrors = 0;
+let creatingConnection = false;
 let currentStepIndex = -1;
 let disconnectedCount = 0;
 let highlightTimeout;
@@ -1134,16 +1135,12 @@ async function fetchEvalData() {
                 continue;
             }
 
-            console.log(file.type);
-
             const sanitizedPublicPath = encodeURI(file.public);
 
             if (file.type.startsWith('text/') && file.public.endsWith('output.txt')) {
                 await fetchAndDisplayTextFile({...file, public: sanitizedPublicPath}, outputContent);
                 hasOutput = true;
             } else if (file.type === 'audio/x-wav' && file.public.endsWith('output.wav')) {
-                console.log("Calling displayAudioFile");
-
                 displayAudioFile({...file, public: sanitizedPublicPath}, outputContent);
                 hasOutput = true;
             }
@@ -1667,22 +1664,6 @@ function initializeConnectionHandler() {
         }
     }
 
-    function clearConnections() {
-        connections.forEach(conn => {
-            if (conn.path && conn.path._eventHandlers) {
-                Object.entries(conn.path._eventHandlers).forEach(([event, handler]) => {
-                    conn.path.removeEventListener(event, handler);
-                });
-                delete conn.path._eventHandlers;
-            }
-        });
-
-        while (pathContainer.firstChild) {
-            pathContainer.removeChild(pathContainer.firstChild);
-        }
-        connections.clear();
-    }
-
     function getNodeIdentifier(node) {
         return node.dataset.nodeId || node.dataset.id || node.getAttribute('data-id') || node.getAttribute('id') || 'unknown';
     }
@@ -1797,6 +1778,8 @@ function initializeConnectionHandler() {
             svg.style.visibility = 'hidden';
             clearConnections();
 
+            const validConnectionIds = new Set();
+
             if (response?.mappings && response.mappings.length > 0) {
                 for (const mapping of response.mappings) {
                     const sourceNode = document.querySelector(`[data-node-id="${mapping.source_id}"]`);
@@ -1805,9 +1788,36 @@ function initializeConnectionHandler() {
                     if (sourceNode && targetNode && document.contains(sourceNode) && document.contains(targetNode)) {
                         const connection = renderConnection(sourceNode, targetNode, mapping.id);
                         connections.add(connection);
+                        validConnectionIds.add(mapping.id);
                     }
                 }
             }
+
+            for (const connection of Array.from(connections)) {
+                if (!validConnectionIds.has(connection.id)) {
+                    try {
+                        if (connection.path._eventHandlers) {
+                            Object.entries(connection.path._eventHandlers).forEach(([event, handler]) => {
+                                connection.path.removeEventListener(event, handler);
+                            });
+                            delete connection.path._eventHandlers;
+                        }
+
+                        connection.path.remove();
+                        connections.delete(connection);
+                    } catch (error) {
+                        console.error(`Error cleaning up stale connection ${connection.id}:`, error);
+                    }
+                }
+            }
+
+            const allPaths = svg.querySelectorAll('path');
+            allPaths.forEach(path => {
+                const isOrphaned = !Array.from(connections).some(connection => connection.path === path);
+                if (isOrphaned) {
+                    path.remove();
+                }
+            });
 
             cleanupConnections();
             updateConnections();
@@ -1824,7 +1834,7 @@ function initializeConnectionHandler() {
         try {
             const apiToken = localStorage.getItem('apiToken');
             const response = await callAPI('source-hook-mappings', apiToken, 'GET');
-            const existingConnections = response?.mappings?.map(mapping => ({
+            let existingConnections = response?.mappings?.map(mapping => ({
                 sourceId: mapping.source_id,
                 targetId: mapping.target_id,
                 sourceType: mapping.source_type,
@@ -1838,7 +1848,12 @@ function initializeConnectionHandler() {
                 targetType: hookNode.dataset.nodeType
             };
 
-            await callAPI('source-hook-mappings', apiToken, 'POST', [...existingConnections, newConnection]);
+            const sourceId = newConnection.sourceId;
+
+            existingConnections = existingConnections.filter(mapping => mapping.sourceId !== sourceId);
+            existingConnections.push(newConnection);
+
+            await callAPI('source-hook-mappings', apiToken, 'POST', existingConnections);
             await refreshConnections();
         } catch (error) {
             console.error('Error saving connection:', error);
@@ -1899,15 +1914,23 @@ function initializeConnectionHandler() {
     }
 
     function createConnection(node1, node2) {
+        if (creatingConnection) return;
+        creatingConnection = true;
+
         const isSourceNode1 = node1.dataset.nodeType !== 'hook';
         const isSourceNode2 = node2.dataset.nodeType !== 'hook';
 
-        if (isSourceNode1 === isSourceNode2) return null;
+        if (isSourceNode1 === isSourceNode2) {
+            creatingConnection = false;
+            return null;
+        }
 
         const sourceNode = isSourceNode1 ? node1 : node2;
         const hookNode = isSourceNode1 ? node2 : node1;
 
-        saveConnection(sourceNode, hookNode);
+        saveConnection(sourceNode, hookNode).finally(() => {
+            creatingConnection = false;
+        });
     }
 
     document.addEventListener('click', async e => {
