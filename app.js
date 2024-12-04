@@ -1600,18 +1600,29 @@ function initializeConnectionHandler() {
     const pathContainer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     svg.appendChild(pathContainer);
 
-    function cleanupConnections() {
+    async function cleanupConnections() {
         try {
             const validPaths = new Set();
+            const apiToken = localStorage.getItem('apiToken');
+            const response = await callAPI('source-hook-mappings', apiToken, 'GET');
+
+            const validConnectionIds = new Set(response?.mappings?.map(mapping => mapping.id) || []);
+
             const allPaths = svg.querySelectorAll('path');
 
             allPaths.forEach(path => {
                 const conn = [...connections].find(c => c?.path === path);
-                if (!conn || !conn.node1 || !conn.node2 ||
+
+                if (
+                    !conn ||
+                    !conn.node1 ||
+                    !conn.node2 ||
                     !document.contains(conn.node1) ||
                     !document.contains(conn.node2) ||
                     !conn.node1.isConnected ||
-                    !conn.node2.isConnected) {
+                    !conn.node2.isConnected ||
+                    !validConnectionIds.has(conn.id)
+                ) {
                     path.remove();
                 } else {
                     if (validPaths.has(path.dataset.connectionId)) {
@@ -1631,8 +1642,9 @@ function initializeConnectionHandler() {
                     document.contains(conn.node2) &&
                     conn.node1.isConnected &&
                     conn.node2.isConnected &&
-                    validPaths.has(conn.path.dataset.connectionId);
+                    validConnectionIds.has(conn.id);
             }));
+
         } catch (error) {
             console.error('Error in cleanupConnections:', error);
             clearConnections();
