@@ -746,7 +746,7 @@ async function deleteHook(hookId) {
         await new Promise(resolve => setTimeout(resolve, 50));
 
         if (window.connectionHandler) {
-            await window.connectionHandler.loadExistingConnections(existingConnections);
+            await window.connectionHandler.refreshConnections(existingConnections);
             window.connectionHandler.updateConnections();
         }
 
@@ -1500,6 +1500,10 @@ function handleBuildStatus(status) {
     } else if (status !== lastStatus) {
         switch (status) {
             case 'completed':
+                if (window.connectionHandler) {
+                    window.connectionHandler.refreshConnections();
+                }
+                break;
             case 'failed':
             case 'aborted':
                 hideLoadingOverlay();
@@ -2024,7 +2028,7 @@ function initializeConnectionHandler() {
         refreshConnections,
         updateConnections,
         toggleConnectionsVisibility,
-        loadExistingConnections: refreshConnections,
+        refreshConnections,
         createConnection,
         removeConnectionsForNode,
         connections,
@@ -2263,7 +2267,7 @@ async function initializeApp(apiToken) {
 
         if (activeTab === 'board' && window.connectionHandler) {
             window.connectionHandler.toggleConnectionsVisibility(true);
-            await window.connectionHandler.loadExistingConnections();
+            await window.connectionHandler.refreshConnections();
             window.connectionHandler.updateConnections();
 
             listMediaFiles(apiToken);
@@ -3443,7 +3447,7 @@ document.getElementById('hook-form').addEventListener('submit', async function (
                 await new Promise(resolve => setTimeout(resolve, 50));
 
                 if (window.connectionHandler) {
-                    await window.connectionHandler.loadExistingConnections(existingConnections);
+                    await window.connectionHandler.refreshConnections(existingConnections);
                     window.connectionHandler.updateConnections();
                 }
 
@@ -3710,7 +3714,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (tab.dataset.tab === 'board') {
             if (window.connectionHandler) {
                 window.connectionHandler.toggleConnectionsVisibility(true);
-                window.connectionHandler.loadExistingConnections();
+                window.connectionHandler.refreshConnections();
 
                 if (window.initialLoadComplete) {
                     listMediaFiles();
@@ -3727,7 +3731,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         boardTab.addEventListener('click', () => {
             setActiveTab(boardTab);
             if (window.connectionHandler) {
-                window.connectionHandler.loadExistingConnections();
+                window.connectionHandler.refreshConnections();
             }
         });
     } else {
