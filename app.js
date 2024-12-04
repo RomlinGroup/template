@@ -502,6 +502,10 @@ async function checkBuildStatus() {
             } catch (e) {
                 console.error('Failed to clear build status:', e);
             }
+
+            if (window.connectionHandler) {
+                window.connectionHandler.refreshConnections();
+            }
         }
     } catch (error) {
         window.consecutiveErrors = (window.consecutiveErrors || 0) + 1;
@@ -1500,10 +1504,6 @@ function handleBuildStatus(status) {
     } else if (status !== lastStatus) {
         switch (status) {
             case 'completed':
-                if (window.connectionHandler) {
-                    window.connectionHandler.refreshConnections();
-                }
-                break;
             case 'failed':
             case 'aborted':
                 hideLoadingOverlay();

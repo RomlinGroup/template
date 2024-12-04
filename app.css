@@ -1240,6 +1240,12 @@ textarea {
     border: 0px;
 }
 
+#sources-button {
+    cursor: default !important;
+    background: transparent !important;
+    color: #000 !important;
+}
+
 #status-bar {
     display: none;
     margin-top: 84px;
