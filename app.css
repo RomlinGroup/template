@@ -207,6 +207,7 @@ textarea {
     width: 15px;
     height: 15px;
     min-width: 15px;
+    margin-right: 10px;
     background: #5865f2;
     border-radius: 50%;
     cursor: pointer;
@@ -263,6 +264,17 @@ textarea {
 .delete-schedule-link,
 .remove-link {
     color: var(--color-tertiary);
+}
+
+.disabled-connection-point {
+    width: 15px;
+    height: 15px;
+    min-width: 15px;
+    margin-right: 10px;
+    background: #5865f2;
+    border-radius: 50%;
+    position: relative;
+    z-index: 2;
 }
 
 .disconnected {
@@ -491,7 +503,6 @@ textarea {
 }
 
 .input-hook-frontpage {
-    padding: 10px;
     margin-bottom: 1px;
     background: #31efb8;
 }
@@ -766,22 +777,25 @@ textarea {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    margin-left: auto;
     transition: all 0.2s ease;
 }
 
 .variables-container {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    width: 100%;
+    padding-top: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
 }
 
 .variable-input {
     display: flex;
     align-items: center;
-    gap: 8px;
     flex: 1;
-    min-width: 250px;
+    min-width: 100%;
+    margin-bottom: 10px;
 }
 
 .variable-input label {
@@ -802,6 +816,11 @@ textarea {
     font-size: 12px;
     padding: 10px;
     background: #ffffff;
+}
+
+.variable-actions {
+    height: 16px;
+    margin-bottom: 10px;
 }
 
 .widget {
