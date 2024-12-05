@@ -1615,22 +1615,45 @@ function initializeConnectionHandler() {
     let selectedNode = null;
     let connections = new Set();
     let isUpdating = false;
-    let lastValidConnectionIds = new Set();
 
     const pathContainer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     svg.appendChild(pathContainer);
 
     async function cleanupConnections() {
         try {
+            const validPaths = new Set();
             const apiToken = localStorage.getItem('apiToken');
             const response = await callAPI('source-hook-mappings', apiToken, 'GET');
+
             const validConnectionIds = new Set(response?.mappings?.map(mapping => mapping.id) || []);
 
-            if (setsAreEqual(validConnectionIds, lastValidConnectionIds)) return;
-            lastValidConnectionIds = validConnectionIds;
+            const allPaths = svg.querySelectorAll('path');
+
+            allPaths.forEach(path => {
+                const conn = [...connections].find(c => c?.path === path);
+
+                if (
+                    !conn ||
+                    !conn.node1 ||
+                    !conn.node2 ||
+                    !document.contains(conn.node1) ||
+                    !document.contains(conn.node2) ||
+                    !conn.node1.isConnected ||
+                    !conn.node2.isConnected ||
+                    !validConnectionIds.has(conn.id)
+                ) {
+                    path.remove();
+                } else {
+                    if (validPaths.has(path.dataset.connectionId)) {
+                        path.remove();
+                    } else {
+                        validPaths.add(path.dataset.connectionId);
+                    }
+                }
+            });
 
             connections = new Set([...connections].filter(conn => {
-                const isValid = conn &&
+                return conn &&
                     conn.path &&
                     conn.node1 &&
                     conn.node2 &&
@@ -1639,47 +1662,36 @@ function initializeConnectionHandler() {
                     conn.node1.isConnected &&
                     conn.node2.isConnected &&
                     validConnectionIds.has(conn.id);
-
-                if (!isValid && conn?.path) {
-                    removeEventListeners(conn.path);
-                    conn.path.remove();
-                }
-                return isValid;
             }));
+
         } catch (error) {
             console.error('Error in cleanupConnections:', error);
             clearConnections();
         }
     }
 
-    function setsAreEqual(a, b) {
-        return a.size === b.size && [...a].every(value => b.has(value));
-    }
-
-    function removeEventListeners(path) {
-        if (path._eventHandlers) {
-            Object.entries(path._eventHandlers).forEach(([event, handler]) => {
-                path.removeEventListener(event, handler);
-            });
-            delete path._eventHandlers;
-        }
-    }
-
     function clearConnections() {
         try {
             connections.forEach(conn => {
-                if (conn?.path) removeEventListeners(conn.path);
+                if (conn?.path?._eventHandlers) {
+                    Object.entries(conn.path._eventHandlers).forEach(([event, handler]) => {
+                        conn.path.removeEventListener(event, handler);
+                    });
+                    delete conn.path._eventHandlers;
+                }
             });
+
             while (pathContainer.firstChild) {
                 pathContainer.removeChild(pathContainer.firstChild);
             }
+
             connections.clear();
-            lastValidConnectionIds.clear();
         } catch (error) {
             console.error('Error in clearConnections:', error);
-            if (pathContainer) pathContainer.innerHTML = '';
+            if (pathContainer) {
+                pathContainer.innerHTML = '';
+            }
             connections = new Set();
-            lastValidConnectionIds = new Set();
         }
     }
 
@@ -1705,15 +1717,20 @@ function initializeConnectionHandler() {
     function updatePath(path, sourceNode, hookNode) {
         const start = getConnectionPoint(sourceNode, true);
         const end = getConnectionPoint(hookNode, false);
+        const dx = end.x - start.x;
         const dy = end.y - start.y;
         const curvature = 0.5;
+        const hx1 = start.x;
         const hy1 = start.y + dy * curvature;
+        const hx2 = end.x;
         const hy2 = end.y - dy * curvature;
-        path.setAttribute('d', `M ${start.x},${start.y} C ${start.x},${hy1} ${end.x},${hy2} ${end.x},${end.y}`);
+        path.setAttribute('d', `M ${start.x},${start.y} C ${hx1},${hy1} ${hx2},${hy2} ${end.x},${end.y}`);
     }
 
     function renderConnection(sourceNode, hookNode, id) {
-        if (!document.querySelector('.tab[data-tab="board"]')?.classList.contains('active')) return null;
+        if (!document.querySelector('.tab[data-tab="board"]')?.classList.contains('active')) {
+            return null;
+        }
 
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.classList.add('connection-line');
@@ -1725,26 +1742,30 @@ function initializeConnectionHandler() {
         path.dataset.sourceId = sourceNode.dataset.nodeId;
         path.dataset.targetId = hookNode.dataset.nodeId;
 
-        const handlers = {
-            click: async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                try {
-                    path.style.pointerEvents = 'none';
-                    await removeConnection({path, node1: sourceNode, node2: hookNode, id});
-                } catch (error) {
-                    path.style.pointerEvents = 'auto';
-                    console.error('Error in click handler:', error);
-                }
-            },
-            mouseenter: () => path.classList.add('highlight'),
-            mouseleave: () => path.classList.remove('highlight')
+        const boundClickHandler = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            try {
+                path.style.pointerEvents = 'none';
+                await removeConnection({path, node1: sourceNode, node2: hookNode, id});
+            } catch (error) {
+                path.style.pointerEvents = 'auto';
+                console.error('Error in click handler:', error);
+            }
         };
 
-        path._eventHandlers = handlers;
-        Object.entries(handlers).forEach(([event, handler]) => {
-            path.addEventListener(event, handler);
-        });
+        const boundMouseEnter = () => path.classList.add('highlight');
+        const boundMouseLeave = () => path.classList.remove('highlight');
+
+        path._eventHandlers = {
+            click: boundClickHandler,
+            mouseenter: boundMouseEnter,
+            mouseleave: boundMouseLeave
+        };
+
+        path.addEventListener('click', boundClickHandler);
+        path.addEventListener('mouseenter', boundMouseEnter);
+        path.addEventListener('mouseleave', boundMouseLeave);
 
         pathContainer.appendChild(path);
         updatePath(path, sourceNode, hookNode);
@@ -1753,37 +1774,29 @@ function initializeConnectionHandler() {
     }
 
     async function removeConnection(connection) {
-        if (!connection?.path) return;
+        if (!connection || !connection.path) return;
 
         try {
             const apiToken = localStorage.getItem('apiToken');
-            removeEventListeners(connection.path);
+
+            if (connection.path._eventHandlers) {
+                Object.entries(connection.path._eventHandlers).forEach(([event, handler]) => {
+                    connection.path.removeEventListener(event, handler);
+                });
+                delete connection.path._eventHandlers;
+            }
+
             connections.delete(connection);
             connection.path.remove();
+
             await callAPI(`source-hook-mappings/${connection.id}`, apiToken, 'DELETE');
             await refreshConnections();
+
         } catch (error) {
             console.error('Error removing connection:', error);
             showStatus('Failed to remove connection', false);
         }
     }
-
-    const debouncedUpdateConnections = debounce(() => {
-        if (!document.querySelector('.tab[data-tab="board"]')?.classList.contains('active')) {
-            svg.style.display = 'none';
-            return;
-        }
-
-        requestAnimationFrame(() => {
-            connections.forEach(({path, node1, node2}) => {
-                if (document.contains(node1) && document.contains(node2)) {
-                    updatePath(path, node1, node2);
-                } else {
-                    path.remove();
-                }
-            });
-        });
-    }, 100);
 
     async function refreshConnections() {
         if (isUpdating) return;
@@ -1796,20 +1809,49 @@ function initializeConnectionHandler() {
             svg.style.visibility = 'hidden';
             clearConnections();
 
-            if (response?.mappings?.length > 0) {
+            const validConnectionIds = new Set();
+
+            if (response?.mappings && response.mappings.length > 0) {
                 for (const mapping of response.mappings) {
                     const sourceNode = document.querySelector(`[data-node-id="${mapping.source_id}"]`);
                     const targetNode = document.querySelector(`[data-node-id="${mapping.target_id}"]`);
 
                     if (sourceNode && targetNode && document.contains(sourceNode) && document.contains(targetNode)) {
                         const connection = renderConnection(sourceNode, targetNode, mapping.id);
-                        if (connection) connections.add(connection);
+                        connections.add(connection);
+                        validConnectionIds.add(mapping.id);
                     }
                 }
             }
 
-            await cleanupConnections();
-            debouncedUpdateConnections();
+            for (const connection of Array.from(connections)) {
+                if (!validConnectionIds.has(connection.id)) {
+                    try {
+                        if (connection.path._eventHandlers) {
+                            Object.entries(connection.path._eventHandlers).forEach(([event, handler]) => {
+                                connection.path.removeEventListener(event, handler);
+                            });
+                            delete connection.path._eventHandlers;
+                        }
+
+                        connection.path.remove();
+                        connections.delete(connection);
+                    } catch (error) {
+                        console.error(`Error cleaning up stale connection ${connection.id}:`, error);
+                    }
+                }
+            }
+
+            const allPaths = svg.querySelectorAll('path');
+            allPaths.forEach(path => {
+                const isOrphaned = !Array.from(connections).some(connection => connection.path === path);
+                if (isOrphaned) {
+                    path.remove();
+                }
+            });
+
+            cleanupConnections();
+            updateConnections();
             svg.style.visibility = 'visible';
         } catch (error) {
             console.error('Error refreshing connections:', error);
@@ -1837,7 +1879,9 @@ function initializeConnectionHandler() {
                 targetType: hookNode.dataset.nodeType
             };
 
-            existingConnections = existingConnections.filter(mapping => mapping.sourceId !== newConnection.sourceId);
+            const sourceId = newConnection.sourceId;
+
+            existingConnections = existingConnections.filter(mapping => mapping.sourceId !== sourceId);
             existingConnections.push(newConnection);
 
             await callAPI('source-hook-mappings', apiToken, 'POST', existingConnections);
@@ -1853,14 +1897,14 @@ function initializeConnectionHandler() {
             const apiToken = localStorage.getItem('apiToken');
             const nodeId = getNodeIdentifier(node);
             const response = await callAPI('source-hook-mappings', apiToken, 'GET');
-            const remainingConnections = response?.mappings
-                ?.filter(mapping => mapping.source_id !== nodeId && mapping.target_id !== nodeId)
-                .map(mapping => ({
-                    sourceId: mapping.source_id,
-                    targetId: mapping.target_id,
-                    sourceType: mapping.source_type,
-                    targetType: mapping.target_type
-                })) || [];
+            const remainingConnections = response?.mappings?.filter(mapping =>
+                mapping.source_id !== nodeId && mapping.target_id !== nodeId
+            ).map(mapping => ({
+                sourceId: mapping.source_id,
+                targetId: mapping.target_id,
+                sourceType: mapping.source_type,
+                targetType: mapping.target_type
+            })) || [];
 
             await callAPI('source-hook-mappings', apiToken, 'POST', remainingConnections);
             await refreshConnections();
@@ -1870,17 +1914,35 @@ function initializeConnectionHandler() {
         }
     }
 
+    function updateConnections() {
+        if (!document.querySelector('.tab[data-tab="board"]')?.classList.contains('active')) {
+            svg.style.display = 'none';
+            return;
+        }
+
+        requestAnimationFrame(() => {
+            cleanupConnections();
+            connections.forEach(({path, node1, node2}) => {
+                if (document.contains(node1) && document.contains(node2)) {
+                    updatePath(path, node1, node2);
+                } else {
+                    path.remove();
+                }
+            });
+        });
+    }
+
     function toggleConnectionsVisibility(show) {
         const isBoardTab = document.querySelector('.tab[data-tab="board"]')?.classList.contains('active');
+
         if (show && isBoardTab) {
             svg.style.display = 'block';
-            debouncedUpdateConnections();
+            cleanupConnections();
+            updateConnections();
         } else {
             svg.style.display = 'none';
         }
     }
-
-    let creatingConnection = false;
 
     function createConnection(node1, node2) {
         if (creatingConnection) return;
@@ -1907,7 +1969,9 @@ function initializeConnectionHandler() {
 
         if (e.target.classList.contains('connection-line')) {
             const conn = [...connections].find(c => c.path === e.target);
-            if (conn) await removeConnection(conn);
+            if (conn) {
+                await removeConnection(conn);
+            }
             return;
         }
 
@@ -1933,21 +1997,34 @@ function initializeConnectionHandler() {
         }
     });
 
-    const debouncedResize = debounce(() => {
+    window.addEventListener('resize', () => {
         svg.setAttribute('width', window.innerWidth);
         svg.setAttribute('height', window.innerHeight);
-        debouncedUpdateConnections();
-    }, 100);
+        updateConnections();
+    });
 
-    window.addEventListener('resize', debouncedResize);
     svg.setAttribute('width', window.innerWidth);
     svg.setAttribute('height', window.innerHeight);
 
-    document.addEventListener('scroll', debouncedUpdateConnections);
+    document.addEventListener('scroll', () => {
+        if (document.querySelector('.tab[data-tab="board"]')?.classList.contains('active')) {
+            updateConnections();
+        }
+    });
 
-    const contentObserver = new MutationObserver(debounce(() => {
-        if (!isUpdating) debouncedUpdateConnections();
-    }, 100));
+    const contentObserver = new MutationObserver(mutations => {
+        const shouldUpdate = mutations.some(mutation =>
+            mutation.type === 'childList' ||
+            (mutation.type === 'attributes' && mutation.target.classList.contains('connection-point'))
+        );
+
+        if (shouldUpdate && !isUpdating) {
+            requestAnimationFrame(() => {
+                cleanupConnections();
+                updateConnections();
+            });
+        }
+    });
 
     contentObserver.observe(document.body, {
         childList: true,
@@ -1964,12 +2041,14 @@ function initializeConnectionHandler() {
 
     return {
         refreshConnections,
-        updateConnections: debouncedUpdateConnections,
+        updateConnections,
         toggleConnectionsVisibility,
+        refreshConnections,
         createConnection,
         removeConnectionsForNode,
         connections,
-        destroy
+        destroy,
+        cleanupConnections
     };
 }
 

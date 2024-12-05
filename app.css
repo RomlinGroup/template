@@ -1097,6 +1097,10 @@ textarea {
     background: #060c4d;
 }
 
+#input-wrapper {
+    position: relative;
+}
+
 #latest-media-button {
     float: left;
     cursor: pointer;

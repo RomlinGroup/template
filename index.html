@@ -79,24 +79,26 @@
     <div id="wrapper">
         <h2>Board</h2>
 
-        <div id="input-data">
-            <ul>
-                <li>
-                    <div class="node-content node-label">
-                        <button id="sources-button" class="trigger-button">Sources</button>
-                    </div> <!-- END .node-content -->
-                </li>
-                <li>
-                    <div class="node-content">
-                        <div class="connection-point" data-node-type="source" data-node-id="listen"></div>
-                        <span>Audio</span>
-                        <button class="trigger-button">Listen</button>
-                    </div> <!-- END .node-content -->
-                </li>
-            </ul>
-        </div> <!-- END #input-data -->
+        <div id="input-wrapper">
+            <div id="input-data">
+                <ul>
+                    <li>
+                        <div class="node-content node-label">
+                            <button id="sources-button" class="trigger-button">Sources</button>
+                        </div> <!-- END .node-content -->
+                    </li>
+                    <li>
+                        <div class="node-content">
+                            <div class="connection-point" data-node-type="source" data-node-id="listen"></div>
+                            <span>Audio</span>
+                            <button class="trigger-button">Listen</button>
+                        </div> <!-- END .node-content -->
+                    </li>
+                </ul>
+            </div> <!-- END #input-data -->
 
-        <div id="input-hooks"></div> <!-- END #input-hooks -->
+            <div id="input-hooks"></div> <!-- END #input-hooks -->
+        </div> <!-- END #input-wrapper -->
 
         <div id="output-widget" class="widget">
             <button class="fullscreen-toggle-btn">
