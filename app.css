@@ -228,7 +228,6 @@ textarea {
 .connection-point {
     width: 15px;
     height: 15px;
-    min-width: 15px;
     margin-right: 10px;
     background: #5865f2;
     border-radius: 50%;
@@ -286,6 +285,15 @@ textarea {
 .delete-schedule-link,
 .remove-link {
     color: var(--color-tertiary);
+}
+
+.delete-source-button {
+    border: none;
+    color: #000 !important;
+    background: transparent;
+    margin-left: 10px;
+    cursor: pointer;
+    flex-shrink: 0;
 }
 
 .disabled-connection-point {
@@ -619,11 +627,13 @@ textarea {
 .node-content {
     display: flex;
     align-items: center;
-    padding: 10px;
     margin-bottom: 20px;
+    padding-left: 10px;
+    padding-right: 10px;
     background: #ffffff;
     border: 1px solid #f0f2ff;
     position: relative;
+    height: 36px;
 }
 
 .node-content span {
