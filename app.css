@@ -90,6 +90,18 @@ textarea {
     margin-right: 10px;
 }
 
+.arrow-button {
+    background: #f0f2ff;
+    color: #000 !important;
+    display: block;
+    width: 100%;
+    text-align: center;
+    cursor: pointer;
+    border: 0px;
+    border-radius: 0px;
+    padding: 10px;
+}
+
 .checkbox-group {
     display: flex;
     align-items: center;
@@ -124,6 +136,16 @@ textarea {
 .checkbox-group input[type="checkbox"]:checked {
     background-color: #31efb8;
     border-color: #31efb8;
+}
+
+.close-button {
+    background: var(--color-primary);
+    border: none;
+    color: var(--color-background);
+    cursor: pointer;
+    font-size: var(--font-size-base);
+    padding: 10px 20px;
+    margin-top: 10px;
 }
 
 .close-lightbox {
@@ -363,6 +385,7 @@ textarea {
     display: block;
     font-size: 12px;
     font-weight: bold;
+    line-height: 16px;
     margin-bottom: 10px;
 }
 
@@ -385,6 +408,17 @@ textarea {
     display: flex;
     justify-content: center;
     clear: both;
+}
+
+.gpio-item {
+    color: #000;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.gpio-item:hover {
+    background-color: #f0f2ff;
 }
 
 .handle,
@@ -585,8 +619,8 @@ textarea {
 .node-content {
     display: flex;
     align-items: center;
-    gap: 10px;
     padding: 10px;
+    margin-bottom: 20px;
     background: #ffffff;
     border: 1px solid #f0f2ff;
     position: relative;
@@ -595,6 +629,15 @@ textarea {
 .node-content span {
     color: #000000;
     flex-grow: 1;
+}
+
+.node-parent {
+    background: var(--color-primary);
+    border: 1px solid var(--color-primary);
+}
+
+.node-parent span {
+    color: #ffffff;
 }
 
 .node-label {
@@ -759,11 +802,10 @@ textarea {
 }
 
 .trigger-button {
-    background: var(--color-tertiary);
-    color: #ffffff;
     border: none;
-    padding: 5px 10px;
-    border-radius: 5px;
+    color: #000 !important;
+    background: transparent;
+    margin-left: 10px;
     cursor: pointer;
     flex-shrink: 0;
 }
@@ -891,6 +933,10 @@ textarea {
     font-size: var(--font-size-base);
     line-height: 1;
     margin-bottom: 20px;
+}
+
+#add-pin {
+    cursor: pointer;
 }
 
 #add-python-button {
@@ -1022,6 +1068,14 @@ textarea {
     margin-bottom: 20px;
 }
 
+#gpio-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    height: 144px;
+    overflow: hidden;
+}
+
 #heartbeat-dot {
     background: var(--color-tertiary);
     border-radius: 50%;
@@ -1081,10 +1135,6 @@ textarea {
     padding-right: 20px;
 }
 
-#input-data {
-    margin-bottom: 20px;
-}
-
 #input-data ul {
     list-style: none;
     overflow: auto;
@@ -1094,7 +1144,6 @@ textarea {
     float: left;
     font-size: 12px;
     margin-right: 20px;
-    background: #060c4d;
 }
 
 #input-wrapper {
@@ -1106,6 +1155,23 @@ textarea {
     cursor: pointer;
     font-family: var(--font-family-mono);
     font-size: 14px;
+}
+
+#lightbox-overlay {
+    align-items: center;
+    background-color: rgba(6, 12, 77, 0.75);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: center;
+    left: 0;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 2147483647;
+    text-align: center;
+    padding: 20px;
+    display: none;
 }
 
 #loading-overlay {
@@ -1267,6 +1333,23 @@ textarea {
     cursor: default !important;
     background: transparent !important;
     color: #000 !important;
+    margin: 0px !important;
+}
+
+.source-lightbox {
+    width: 300px;
+    margin: 50px auto;
+    background-color: white;
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: center;
+}
+
+.source-lightbox h3 {
+    color: #000;
+    font-size: var(--font-size-base);
+    font-weight: normal;
+    margin-bottom: 10px;
 }
 
 #status-bar {

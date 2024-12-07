@@ -624,6 +624,94 @@ function createControlElement(className, innerHTML, onClick) {
     return element;
 }
 
+function createGPIOSelector(buttonSelector, validGPIOPins, onSelectCallback) {
+    validGPIOPins = validGPIOPins || [4, 5, 6, 12, 13, 16, 17, 20, 21, 22, 23, 24, 25, 26, 27];
+
+    const lightboxHTML = `
+        <div id="lightbox-overlay">
+            <div class="source-lightbox">
+                <h3>Add</h3>
+                <div class="gpio-selector">
+                    <button id="arrow-up" class="arrow-button">Up</button>
+                    <ul id="gpio-list"></ul>
+                    <button id="arrow-down" class="arrow-button">Down</button>
+                </div>
+                <button id="close-lightbox" class="close-button">Close</button>
+            </div>
+        </div>
+    `;
+
+    const lightboxContainer = document.createElement('div');
+    lightboxContainer.innerHTML = lightboxHTML;
+    document.body.appendChild(lightboxContainer);
+
+    const lightboxOverlay = document.getElementById('lightbox-overlay');
+    const gpioList = document.getElementById('gpio-list');
+    const closeButton = document.getElementById('close-lightbox');
+    const arrowUp = document.getElementById('arrow-up');
+    const arrowDown = document.getElementById('arrow-down');
+
+    const visibleCount = 5;
+    let startIndex = 0;
+
+    function renderList() {
+        gpioList.innerHTML = '';
+        const endIndex = Math.min(startIndex + visibleCount, validGPIOPins.length);
+
+        for (let i = startIndex; i < endIndex; i++) {
+            const li = document.createElement('li');
+            li.textContent = `GPIO ${validGPIOPins[i]}`;
+            li.classList.add('gpio-item');
+            li.addEventListener('click', () => {
+                if (onSelectCallback) onSelectCallback(validGPIOPins[i]);
+                hideLightbox();
+            });
+
+            gpioList.appendChild(li);
+        }
+    }
+
+    function handleScroll(direction) {
+        if (direction === 'up' && startIndex > 0) {
+            startIndex--;
+        } else if (direction === 'down' && startIndex + visibleCount < validGPIOPins.length) {
+            startIndex++;
+        }
+        renderList();
+    }
+
+    function showLightbox() {
+        startIndex = 0;
+        renderList();
+        lightboxOverlay.style.display = 'block';
+    }
+
+    function hideLightbox() {
+        lightboxOverlay.style.display = 'none';
+    }
+
+    closeButton.addEventListener('click', hideLightbox);
+    arrowUp.addEventListener('click', () => handleScroll('up'));
+    arrowDown.addEventListener('click', () => handleScroll('down'));
+
+    arrowUp.addEventListener('mouseover', () => {
+        const interval = setInterval(() => handleScroll('up'), 200);
+        arrowUp.addEventListener('mouseout', () => clearInterval(interval), {once: true});
+    });
+
+    arrowDown.addEventListener('mouseover', () => {
+        const interval = setInterval(() => handleScroll('down'), 200);
+        arrowDown.addEventListener('mouseout', () => clearInterval(interval), {once: true});
+    });
+
+    const buttons = document.querySelectorAll(buttonSelector);
+    buttons.forEach(button => button.addEventListener('click', showLightbox));
+
+    lightboxOverlay.addEventListener('click', (e) => {
+        if (e.target === lightboxOverlay) hideLightbox();
+    });
+}
+
 function updateToggleButtonIcon(button, block) {
     button.innerHTML = block.classList.contains('disabled') ? crossedEyeIcon : regularEyeIcon;
 }
@@ -820,6 +908,37 @@ async function deleteScheduleEntry(scheduleId, datetimeIndex = null) {
     } catch (error) {
         console.error('Error deleting schedule entry:', error);
         showStatus(`Error during deletion: ${error.message}`, false);
+    }
+}
+
+async function deleteSource(sourceId) {
+    if (!isAuthenticated()) {
+        showStatus('Please authenticate before deleting sources.', false);
+        return;
+    }
+
+    try {
+        const apiToken = localStorage.getItem('apiToken');
+        const sourceElement = document.querySelector(`[data-source-id="${sourceId}"]`);
+
+        const response = await callAPI(`sources/${sourceId}`, apiToken, 'DELETE');
+
+        if (response && response.message === "Source deleted successfully.") {
+            if (sourceElement) {
+                sourceElement.remove();
+            }
+
+            if (window.connectionHandler) {
+                await window.connectionHandler.refreshConnections();
+            }
+
+            showStatus('Source deleted successfully!', true);
+        } else {
+            throw new Error('Unexpected response from server');
+        }
+    } catch (error) {
+        console.error('Error deleting source:', error);
+        showStatus(`Error deleting source: ${error.message}`, false);
     }
 }
 
@@ -1190,6 +1309,7 @@ async function fetchHooks(apiToken) {
             hookDiv.className = 'input-hook-frontpage';
 
             const hookName = hook.hook_name;
+            const hookType = hook.hook_type;
 
             const findVariables = (script) => {
                 const variables = new Map();
@@ -2271,7 +2391,8 @@ async function initializeApp(apiToken) {
             checkHeartbeat(apiToken),
             loadDefaultFile(apiToken),
             fetchComments(apiToken),
-            fetchHooks(apiToken)
+            fetchHooks(apiToken),
+            loadAndRenderSources(apiToken)
         ]);
 
         window.connectionHandler = initializeConnectionHandler();
@@ -2555,6 +2676,74 @@ async function listMediaFiles() {
     } catch (error) {
         console.error('Error listing media files:', error);
         showStatus('Error loading media files. Please try again.', false);
+    }
+}
+
+async function loadAndRenderSources(apiToken) {
+    try {
+        const response = await callAPI('sources', apiToken, 'GET');
+
+        if (!response || !response.sources) {
+            console.error('No sources received from API');
+            return;
+        }
+
+        const inputData = document.getElementById('input-data');
+        let sourcesList = inputData.querySelector('ul');
+
+        if (sourcesList) {
+            const lockedNodes = sourcesList.querySelectorAll('.node-lock');
+            sourcesList.innerHTML = '';
+            lockedNodes.forEach(node => sourcesList.appendChild(node));
+        } else {
+            sourcesList = inputData.ownerDocument.createElement('ul');
+            inputData.appendChild(sourcesList);
+        }
+
+        if (Array.isArray(response.sources)) {
+            response.sources.forEach(source => {
+                const li = inputData.ownerDocument.createElement('li');
+                const nodeId = source.source_name.toLowerCase();
+                li.setAttribute('data-source-id', source.id);
+                li.innerHTML = `
+                   <div class="node-content">
+                       <div class="connection-point" data-node-type="source" data-node-id="${nodeId}"></div>
+                       <span>${source.source_type} ${source.source_name}</span>
+                       <div class="source-controls">
+                           <button class="delete-source-button" title="Delete source">
+                               ${editorTrashIcon}
+                           </button>
+                       </div>
+                   </div>
+               `;
+                sourcesList.appendChild(li);
+
+                const deleteButton = li.querySelector('.delete-source-button');
+                if (deleteButton) {
+                    deleteButton.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        if (confirm('Are you sure you want to delete this source?')) {
+                            const sourceId = li.getAttribute('data-source-id');
+                            try {
+                                await deleteSource(sourceId);
+                                await loadAndRenderSources(localStorage.getItem('apiToken'));
+                            } catch (error) {
+                                console.error('Error during source deletion:', error);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        if (window.connectionHandler) {
+            await window.connectionHandler.refreshConnections();
+        }
+    } catch (error) {
+        console.error('Error loading sources:', error);
+        showStatus('Error loading sources', false);
     }
 }
 
@@ -3561,6 +3750,52 @@ async function updateExistingHook(hookId, newHook) {
     }
 }
 
+// Sources
+async function addSource(sourceName, sourceType, sourceDetails = null) {
+    if (!isAuthenticated()) {
+        showStatus('Please authenticate before adding sources.', false);
+        return;
+    }
+
+    const apiToken = localStorage.getItem('apiToken');
+    const csrfToken = localStorage.getItem('csrfToken');
+    const headers = {
+        'Authorization': `Bearer ${apiToken}`,
+        'X-CSRF-Token': csrfToken,
+        'Content-Type': 'application/json'
+    };
+
+    const sourceData = {
+        source_name: sourceName,
+        source_type: sourceType,
+        source_details: sourceDetails
+    };
+
+    try {
+        const response = await fetch(`${getBaseUrl()}/api/sources`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(sourceData)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Server error: ${errorData.detail || response.statusText}`);
+        }
+
+        const responseData = await response.json();
+        showStatus('Source added successfully!', true);
+
+        await loadAndRenderSources(apiToken);
+
+        return responseData;
+    } catch (error) {
+        console.error('Error adding source:', error);
+        showStatus(`Error adding source: ${error.message}`, false);
+        throw error;
+    }
+}
+
 window.addEventListener('resize', resizeAllTextareas);
 
 document.getElementById('file-content').addEventListener('click', function (event) {
@@ -3582,6 +3817,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             abortBuild();
         });
     }
+
+    createGPIOSelector(
+        '#add-pin',
+        [4, 5, 6, 12, 13, 16, 17, 20, 21, 22, 23, 24, 25, 26, 27],
+        function (selectedPin) {
+            console.log(`You added GPIO ${selectedPin}`);
+            addSource(`${selectedPin}`, 'GPIO', null);
+        }
+    );
 
     window.connectionHandler = initializeConnectionHandler();
 
