@@ -1862,6 +1862,8 @@ async function initializeApp(apiToken) {
 
         await new Promise(resolve => setTimeout(resolve, 150));
 
+        window.lineDrawing = setupLineDrawing();
+
         const activeTab = localStorage.getItem('activeTab') || 'board';
 
         if (activeTab === 'board') {
@@ -2829,10 +2831,7 @@ function setupLineDrawing() {
 
     async function loadConnections() {
         try {
-            const res = await fetch('/api/source-hook-mappings', {
-                headers: {Authorization: `Bearer ${token}`}
-            });
-            const data = await res.json();
+            const data = await callAPI('source-hook-mappings', token, 'GET');
 
             const checkAndDrawConnections = () => {
                 connections.forEach(c => c.path?.remove());
@@ -2870,28 +2869,12 @@ function setupLineDrawing() {
                         const conn = connections.find(c => c.path === path);
                         if (conn) {
                             try {
-                                const remainingConnections = connections
-                                    .filter(c => c !== conn)
-                                    .map(c => ({
-                                        sourceId: c.node1.dataset.nodeId,
-                                        targetId: c.node2.dataset.nodeId,
-                                        sourceType: c.node1.dataset.nodeType,
-                                        targetType: c.node2.dataset.nodeType
-                                    }));
-
-                                await fetch('/api/source-hook-mappings', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Authorization': `Bearer ${token}`,
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify(remainingConnections)
-                                });
-
+                                await callAPI(`source-hook-mappings/${conn.id}`, token, 'DELETE');
                                 conn.path.remove();
                                 connections = connections.filter(c => c !== conn);
                             } catch (e) {
                                 console.error('Failed to delete connection:', e);
+                                showStatus('Failed to delete connection: ' + e.message, false);
                             }
                         }
                     });
@@ -2947,16 +2930,7 @@ function setupLineDrawing() {
             };
 
             const allConnections = [...currentConnections, newConnection];
-
-            await fetch('/api/source-hook-mappings', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(allConnections)
-            });
-
+            await callAPI('source-hook-mappings', token, 'POST', allConnections);
             await loadConnections();
         } catch (e) {
             console.error('Save failed:', e);
@@ -3021,28 +2995,12 @@ function setupLineDrawing() {
 
             if (existingSourceConnection) {
                 try {
-                    const remainingConnections = connections
-                        .filter(conn => conn.id !== existingSourceConnection.id)
-                        .map(conn => ({
-                            sourceId: conn.node1.dataset.nodeId,
-                            targetId: conn.node2.dataset.nodeId,
-                            sourceType: conn.node1.dataset.nodeType,
-                            targetType: conn.node2.dataset.nodeType
-                        }));
-
-                    await fetch('/api/source-hook-mappings', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(remainingConnections)
-                    });
-
+                    await callAPI(`source-hook-mappings/${existingSourceConnection.id}`, token, 'DELETE');
                     existingSourceConnection.path.remove();
                     connections = connections.filter(c => c !== existingSourceConnection);
                 } catch (e) {
                     console.error('Failed to delete existing connection:', e);
+                    showStatus('Failed to delete connection: ' + e.message, false);
                     return;
                 }
             }
@@ -3557,8 +3515,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             abortBuild();
         });
     }
-
-    window.lineDrawing = setupLineDrawing();
 
     createGPIOSelector(
         '#add-pin',
