@@ -2995,7 +2995,7 @@ function setupLineDrawing() {
             );
 
             if (existingTargetConnection) {
-                console.warn('Target node already has a connection');
+                showStatus('Target node already has a connection.', false);
                 firstSelected.classList.remove('highlight');
                 firstSelected = null;
                 return;
