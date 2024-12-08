@@ -2917,12 +2917,20 @@ function setupLineDrawing() {
         }
     }
 
-    async function saveConnection(n1, n2) {
+    async function saveConnection(node1, node2) {
         try {
+            const sourceNode = node1.dataset.nodeType === 'source' ? node1 : node2;
+            const hookNode = node1.dataset.nodeType === 'hook' ? node1 : node2;
+
+            if (sourceNode.dataset.nodeType !== 'source' || hookNode.dataset.nodeType !== 'hook') {
+                console.error('Invalid connection: Must connect a source to a hook');
+                return;
+            }
+
             const currentConnections = connections
                 .filter(conn =>
-                    conn.node1.dataset.nodeId !== n1.dataset.nodeId &&
-                    conn.node2.dataset.nodeId !== n2.dataset.nodeId
+                    conn.node1.dataset.nodeId !== sourceNode.dataset.nodeId &&
+                    conn.node2.dataset.nodeId !== hookNode.dataset.nodeId
                 )
                 .map(conn => ({
                     sourceId: conn.node1.dataset.nodeId,
@@ -2932,10 +2940,10 @@ function setupLineDrawing() {
                 }));
 
             const newConnection = {
-                sourceId: n1.dataset.nodeId,
-                targetId: n2.dataset.nodeId,
-                sourceType: n1.dataset.nodeType,
-                targetType: n2.dataset.nodeType
+                sourceId: sourceNode.dataset.nodeId,
+                targetId: hookNode.dataset.nodeId,
+                sourceType: sourceNode.dataset.nodeType,
+                targetType: hookNode.dataset.nodeType
             };
 
             const allConnections = [...currentConnections, newConnection];
@@ -2987,10 +2995,20 @@ function setupLineDrawing() {
         }
 
         if (firstSelected && firstSelected !== node) {
+            if (firstSelected.dataset.nodeType === node.dataset.nodeType) {
+                showStatus(`Cannot connect two ${firstSelected.dataset.nodeType}s together.`, false);
+                firstSelected.classList.remove('highlight');
+                firstSelected = null;
+                return;
+            }
+
             const existingSourceConnection = connections.find(conn =>
-                conn.node1.dataset.nodeId === firstSelected.dataset.nodeId
+                conn.node1.dataset.nodeId === firstSelected.dataset.nodeId ||
+                conn.node1.dataset.nodeId === node.dataset.nodeId
             );
+
             const existingTargetConnection = connections.find(conn =>
+                conn.node2.dataset.nodeId === firstSelected.dataset.nodeId ||
                 conn.node2.dataset.nodeId === node.dataset.nodeId
             );
 
