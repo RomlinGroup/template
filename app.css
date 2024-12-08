@@ -226,8 +226,8 @@ textarea {
 }
 
 .connection-point {
-    width: 15px;
-    height: 15px;
+    min-width: 15px;
+    min-height: 15px;
     margin-right: 10px;
     background: #5865f2;
     border-radius: 50%;

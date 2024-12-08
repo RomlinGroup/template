@@ -2682,7 +2682,6 @@ async function listMediaFiles() {
 async function loadAndRenderSources(apiToken) {
     try {
         const response = await callAPI('sources', apiToken, 'GET');
-
         if (!response || !response.sources) {
             console.error('No sources received from API');
             return;
@@ -2701,21 +2700,26 @@ async function loadAndRenderSources(apiToken) {
         }
 
         if (Array.isArray(response.sources)) {
-            response.sources.forEach(source => {
+            const sortedSources = [...response.sources].sort((a, b) => a.id - b.id);
+
+            sortedSources.forEach(source => {
                 const li = inputData.ownerDocument.createElement('li');
                 const nodeId = source.source_name.toLowerCase();
                 li.setAttribute('data-source-id', source.id);
                 li.innerHTML = `
-                   <div class="node-content">
-                       <div class="connection-point" data-node-type="source" data-node-id="${nodeId}"></div>
-                       <span>${source.source_type} ${source.source_name}</span>
-                       <div class="source-controls">
-                           <button class="delete-source-button" title="Delete source">
-                               ${editorTrashIcon}
-                           </button>
-                       </div>
-                   </div>
-               `;
+                    <div class="node-content">
+                        <div class="connection-point" 
+                             data-node-type="source" 
+                             data-node-id="${nodeId}">
+                        </div>
+                        <span>${source.source_type} ${source.source_name}</span>
+                        <div class="source-controls">
+                            <button class="delete-source-button" title="Delete source">
+                                ${editorTrashIcon}
+                            </button>
+                        </div>
+                    </div>
+                `;
                 sourcesList.appendChild(li);
 
                 const deleteButton = li.querySelector('.delete-source-button');
@@ -2723,7 +2727,6 @@ async function loadAndRenderSources(apiToken) {
                     deleteButton.addEventListener('click', async (e) => {
                         e.preventDefault();
                         e.stopPropagation();
-
                         if (confirm('Are you sure you want to delete this source?')) {
                             const sourceId = li.getAttribute('data-source-id');
                             try {
@@ -3765,6 +3768,20 @@ async function addSource(sourceName, sourceType, sourceDetails = null) {
         'Content-Type': 'application/json'
     };
 
+    const inputData = document.getElementById('input-data');
+    const sourcesList = inputData.querySelector('ul');
+
+    if (sourcesList) {
+        const existingSources = sourcesList.querySelectorAll('li[data-source-id]');
+        for (const source of existingSources) {
+            const span = source.querySelector('span');
+            if (span && span.textContent.includes(sourceName)) {
+                showStatus('This source is already added.', false);
+                return;
+            }
+        }
+    }
+
     const sourceData = {
         source_name: sourceName,
         source_type: sourceType,
@@ -3786,7 +3803,44 @@ async function addSource(sourceName, sourceType, sourceDetails = null) {
         const responseData = await response.json();
         showStatus('Source added successfully!', true);
 
-        await loadAndRenderSources(apiToken);
+        if (sourcesList) {
+            const li = document.createElement('li');
+            const nodeId = sourceName.toLowerCase();
+            li.setAttribute('data-source-id', responseData.id);
+            li.innerHTML = `
+                <div class="node-content">
+                    <div class="connection-point" data-node-type="source" data-node-id="${nodeId}"></div>
+                    <span>${sourceType} ${sourceName}</span>
+                    <div class="source-controls">
+                        <button class="delete-source-button" title="Delete source">
+                            ${editorTrashIcon}
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            const deleteButton = li.querySelector('.delete-source-button');
+            if (deleteButton) {
+                deleteButton.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (confirm('Are you sure you want to delete this source?')) {
+                        try {
+                            await deleteSource(responseData.id);
+                            li.remove();
+                        } catch (error) {
+                            console.error('Error during source deletion:', error);
+                        }
+                    }
+                });
+            }
+
+            sourcesList.appendChild(li);
+
+            if (window.connectionHandler) {
+                window.connectionHandler.updateConnections();
+            }
+        }
 
         return responseData;
     } catch (error) {
