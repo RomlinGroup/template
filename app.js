@@ -1754,16 +1754,14 @@ function initializeMonacoEditorForExistingBlocks() {
 
         if (editorContainer) {
             const uniqueId = block.id;
+            const language = block.classList.contains('part-python') ? 'python' : 'shell';
+            const initialValue = editorContainer.textContent.trim() || `// Enter your ${language} code here...`;
+
+            editorContainer.textContent = '';
 
             require.config({paths: {'vs': 'node_modules/monaco-editor/min/vs'}});
 
             require(['vs/editor/editor.main'], function () {
-                const language = block.classList.contains('part-python') ? 'python' : 'bash';
-
-                const initialValue = editorContainer.textContent.trim() || '// Enter your ' + type + ' code here...';
-
-                editorContainer.textContent = '';
-
                 editorContainer.addEventListener('wheel', () => {
                     editor.layout();
                 }, {passive: true});
@@ -1813,11 +1811,12 @@ function initializeMonacoEditorForExistingBlocks() {
                     },
                     theme: 'flatpack',
                     unusualLineTerminators: 'auto',
-                    value: initialValue,
                     wordWrap: 'on',
                     wrappingIndent: 'same',
                     wrappingStrategy: 'advanced'
                 });
+
+                editor.setValue(initialValue);
 
                 const updateHeight = () => {
                     const contentHeight = Math.max(100, Math.min(1000, editor.getContentHeight()));
