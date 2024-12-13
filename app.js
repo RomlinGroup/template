@@ -3668,6 +3668,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (tab.dataset.tab === 'board') {
             if (window.initialLoadComplete) {
                 listMediaFiles();
+
+                if (window.lineDrawing && typeof window.lineDrawing.loadConnections === 'function') {
+                    window.lineDrawing.loadConnections();
+                } else {
+                    window.lineDrawing = setupLineDrawing();
+                }
             }
         }
     };
