@@ -1811,6 +1811,7 @@ function initializeMonacoEditorForExistingBlocks() {
                     },
                     theme: 'flatpack',
                     unusualLineTerminators: 'auto',
+                    readOnly: false,
                     wordWrap: 'on',
                     wrappingIndent: 'same',
                     wrappingStrategy: 'advanced'
@@ -1826,6 +1827,8 @@ function initializeMonacoEditorForExistingBlocks() {
 
                 editor.onDidContentSizeChange(updateHeight);
                 updateHeight();
+
+                editorContainer._monaco = editor;
             });
 
             const toggleButton = block.querySelector('.toggle-button');
@@ -2505,11 +2508,10 @@ function renderFileContents(codeBlocks) {
 
         const editor = document.createElement('div');
         editor.className = 'editor';
-        editor.contentEditable = disabled ? 'false' : 'true';
-
+        editor.contentEditable = 'true';
         editor.textContent = code;
-
         editor.style.whiteSpace = 'pre-wrap';
+        editor.style.pointerEvents = 'auto';
 
         editorWrapper.appendChild(editor);
 
@@ -2539,8 +2541,6 @@ function renderFileContents(codeBlocks) {
 
         if (disabled) {
             block.classList.add('disabled');
-            editor.contentEditable = 'false';
-            editor.style.pointerEvents = 'none';
             const controlElements = block.querySelectorAll('.move-up, .move-down, .delete-button');
             controlElements.forEach(control => control.style.display = 'none');
             commentButton.style.display = 'none';
@@ -3105,18 +3105,15 @@ function toggleBlock(block) {
     }
 
     block.classList.toggle('disabled');
-    const editor = block.querySelector('.editor');
+
     const controls = block.querySelectorAll('.move-up, .move-down, .delete-button');
     const commentButton = block.querySelector('.comment-button');
 
+    const editor = block.querySelector('.editor');
+
     if (editor) {
-        if (block.classList.contains('disabled')) {
-            editor.contentEditable = 'false';
-            editor.style.pointerEvents = 'none';
-        } else {
-            editor.contentEditable = 'true';
-            editor.style.pointerEvents = 'auto';
-        }
+        editor.contentEditable = 'true';
+        editor.style.pointerEvents = 'auto';
     } else {
         console.error('Editor element not found within block:', block);
     }
