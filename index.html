@@ -79,12 +79,20 @@
     <div id="wrapper">
         <h2>Board</h2>
 
+        <div id="app-preview">
+            <div id="public-notice">
+                http://localhost:3000 (public)
+            </div> <!-- END #public-notice -->
+            <div id="preview-content">
+                <iframe id="preview-frame" src="http://localhost:3000"></iframe>
+            </div> <!-- END #preview-content -->
+        </div> <!-- END #app-preview -->
+
         <div id="input-wrapper">
             <div id="input-data">
                 <ul>
                     <li class="node-lock">
                         <div id="add-pin" class="node-content node-parent">
-                            <!-- <div class="connection-point" data-node-type="source" data-node-id="gpio"></div> -->
                             <span>GPIO</span>
                             <button class="trigger-button">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">

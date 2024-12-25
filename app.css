@@ -999,6 +999,38 @@ textarea {
     margin-bottom: 20px;
 }
 
+#app-preview {
+    border: 5px solid #31efb8;
+    border-top: 0px;
+    background: #000;
+    color: #fff;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+#public-notice {
+    color: #000;
+    background: #31efb8;
+    text-align: center;
+    padding: 10px;
+}
+
+#preview-frame {
+    width: 100%;
+    height: 600px;
+    border: none;
+    position: relative;
+    top: 0;
+    left: 0;
+    transition: all 0.3s ease;
+}
+
+#preview-frame[srcdoc] {
+    height: auto;
+    min-height: 100%;
+}
+
 #button-container {
     display: flex;
     margin-top: 20px;
@@ -1157,6 +1189,7 @@ textarea {
 }
 
 #input-wrapper {
+    display: none;
     position: relative;
 }
 
