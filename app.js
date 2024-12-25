@@ -2552,18 +2552,39 @@ function renderFileContents(codeBlocks) {
 
 function renderHooks(hooks) {
     const hooksContainer = document.getElementById('hooks-list');
+    const inputHooksDiv = document.getElementById('input-hooks');
+    const inputData = document.getElementById('input-data');
+    const inputWrapper = document.getElementById('input-wrapper');
+
     hooksContainer.innerHTML = '';
 
     if (!hooks || hooks.length === 0) {
         hooksContainer.innerHTML += '<p>No hooks available.</p>';
+        if (inputHooksDiv) inputHooksDiv.style.display = 'none';
+        if (inputData) inputData.style.display = 'none';
+        if (inputWrapper) inputWrapper.style.display = 'none';
         return;
+    }
+
+    const frontpageHooks = hooks.filter(hook => hook.show_on_frontpage === true);
+
+    if (frontpageHooks.length === 0) {
+        if (inputHooksDiv) inputHooksDiv.style.display = 'none';
+        if (inputData) inputData.style.display = 'none';
+        if (inputWrapper) inputWrapper.style.display = 'none';
+    } else {
+        if (inputHooksDiv) inputHooksDiv.style.display = 'block';
+        if (inputData) inputData.style.display = 'block';
+        if (inputWrapper) {
+            inputWrapper.style.display = 'block';
+            inputWrapper.style.position = 'relative';
+        }
     }
 
     const list = document.createElement('ul');
 
     hooks.forEach(hook => {
         const listItem = document.createElement('li');
-
         listItem.setAttribute('data-hook-id', hook.id);
 
         const hookLabelElement = document.createElement('div');
