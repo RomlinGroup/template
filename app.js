@@ -76,12 +76,9 @@ const regularEyeIcon = `
 
 let buildStatusCleared = false;
 let buildStatusInterval;
-let consecutiveErrors = 0;
-let creatingConnection = false;
 let currentStepIndex = -1;
 let disconnectedCount = 0;
 let highlightTimeout;
-let initializationTimeout;
 let isBuilding = false;
 let isExpanded = false;
 let isFetchingEvalData = false;
@@ -91,35 +88,88 @@ let lastStep = '';
 let manualDatetimes = [];
 
 async function abortBuild(apiToken) {
+    const abortButton = document.getElementById('abort-build-button');
+
+    if (abortButton) {
+        abortButton.disabled = true;
+        abortButton.style.cursor = 'not-allowed';
+        abortButton.textContent = 'Aborting...';
+    }
+
+    let abortSuccessful = false;
+
     try {
         if (!apiToken) {
             apiToken = localStorage.getItem('apiToken');
         }
 
         const response = await callAPI('abort-build', apiToken, 'POST');
-
         console.log('Abort build response:', response);
 
         if (response && response.message) {
-            if (response.message === "Build process forcefully terminated.") {
-                showStatus('Build process aborted.', true);
+            if (response.message === "Build process forcefully terminated." ||
+                response.message === "Attempted force abort with errors." ||
+                response.message.includes("failed")) {
+
+                abortSuccessful = true;
+
+                if (abortButton) {
+                    abortButton.disabled = false;
+                    abortButton.textContent = 'Abort build';
+                    abortButton.style.cursor = 'pointer';
+                }
+
+                showStatus(response.message === "Build process forcefully terminated." ?
+                        'Build process aborted.' : 'Build aborted with some errors.',
+                    response.message === "Build process forcefully terminated.");
+
                 stopBuildStatusCheck();
-                hideLoadingOverlay();
-                enableInteractions();
-            } else if (response.message === "Attempted force abort with errors.") {
-                showStatus('Build aborted with some errors.', false);
-                stopBuildStatusCheck();
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 hideLoadingOverlay();
                 enableInteractions();
             } else {
                 showStatus(response.message, false);
+                if (abortButton) {
+                    abortButton.disabled = false;
+                    abortButton.style.cursor = 'pointer';
+                    abortButton.textContent = 'Abort build';
+                }
             }
         } else {
-            showStatus('Invalid response from server', false);
+            throw new Error('Invalid response from server');
         }
     } catch (error) {
-        console.error('Error aborting build:', error);
-        showStatus(`Error aborting build: ${error.message}`, false);
+        console.error('Error during abort:', error);
+
+        if (error.message.includes('Bad file descriptor') ||
+            error.message.includes('socket') ||
+            error.message.includes('connection')) {
+
+            abortSuccessful = true;
+
+            if (abortButton) {
+                abortButton.disabled = false;
+                abortButton.textContent = 'Abort build';
+                abortButton.style.cursor = 'pointer';
+            }
+
+            showStatus('Build process aborted (connection closed).', true);
+            stopBuildStatusCheck();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            hideLoadingOverlay();
+            enableInteractions();
+        } else {
+            showStatus(`Error aborting build: ${error.message}`, false);
+            if (abortButton) {
+                abortButton.disabled = false;
+                abortButton.style.cursor = 'pointer';
+                abortButton.textContent = 'Abort build';
+            }
+        }
+    } finally {
+        if (abortSuccessful && abortButton) {
+            abortButton.style.display = 'none';
+        }
     }
 }
 
@@ -1547,7 +1597,7 @@ function handleBuildStatus(status) {
         const stepIndex = BUILD_STEPS.indexOf(step);
 
         if (stepIndex > currentStepIndex) {
-            showLoadingOverlay(`${step}`);
+            showLoadingOverlay(`${step}`, true);
             disableInteractions();
             showAbortButton();
             currentStepIndex = stepIndex;
@@ -1574,7 +1624,7 @@ function handleBuildStatus(status) {
             case 'unknown':
                 break;
             default:
-                showLoadingOverlay(status);
+                showLoadingOverlay(status, true);
         }
 
         currentStepIndex = -1;
@@ -1603,8 +1653,12 @@ function hideLoadingOverlay() {
     const loadingOverlay = document.getElementById('loading-overlay');
     loadingOverlay.style.display = 'none';
 
-    const abortButton = document.getElementById('abort-build-button');
+    const iframe = loadingOverlay.querySelector('iframe');
+    if (iframe) {
+        iframe.remove();
+    }
 
+    const abortButton = document.getElementById('abort-build-button');
     if (abortButton) {
         abortButton.style.display = 'none';
         abortButton.disabled = true;
@@ -2036,7 +2090,7 @@ async function listMediaFiles() {
         async function renderGalleryItems(files, start, limit) {
             if (isLayoutInProgress) return;
 
-            showLoadingOverlay('Loading media files...');
+            showLoadingOverlay('Loading media files...', false);
             isLayoutInProgress = true;
 
             try {
@@ -3058,9 +3112,21 @@ function showApiKeyModal() {
     apiKeyModal.style.display = 'flex';
 }
 
-function showLoadingOverlay(message = 'Please wait') {
+function showLoadingOverlay(message = 'Please wait', isBuilding = false) {
     const loadingOverlay = document.getElementById('loading-overlay');
     const loadingMessage = document.getElementById('loading-message');
+    const existingIframe = loadingOverlay.querySelector('iframe');
+
+    if (isBuilding && !existingIframe) {
+        const iframe = document.createElement('iframe');
+        iframe.src = 'http://localhost:3000';
+        iframe.style.maxWidth = '800px';
+        iframe.style.width = '100%';
+        iframe.style.height = '500px';
+        iframe.style.border = 'none';
+        iframe.style.marginTop = '20px';
+        loadingOverlay.appendChild(iframe);
+    }
 
     loadingMessage.textContent = message;
     loadingOverlay.style.display = 'flex';
@@ -3210,7 +3276,7 @@ async function validateAndInitialize(apiToken) {
         console.warn('API key modal element not found.');
     }
 
-    showLoadingOverlay(getRandomQuote());
+    showLoadingOverlay(getRandomQuote(), false);
 
     try {
         if (typeof apiToken !== 'string' || apiToken.trim() === '') {
@@ -3289,7 +3355,7 @@ async function validateAndInitialize(apiToken) {
         if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
             showStatus('Network error. Please check your connection and try again.', false);
         } else if (error.message && error.message.includes('401')) {
-            showStatus('Invalid API token. Please enter a valid token.', false);
+            // showStatus('Invalid API token. Please enter a valid token.', false);
         } else {
             showStatus(`Failed to validate API token. ${error.message}`, false);
         }
