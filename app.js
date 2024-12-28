@@ -89,6 +89,7 @@ let manualDatetimes = [];
 
 async function abortBuild(apiToken) {
     const abortButton = document.getElementById('abort-build-button');
+    const overlay = document.getElementById('loading-overlay');
 
     if (abortButton) {
         abortButton.disabled = true;
@@ -96,79 +97,46 @@ async function abortBuild(apiToken) {
         abortButton.textContent = 'Aborting...';
     }
 
-    let abortSuccessful = false;
-
     try {
         if (!apiToken) {
             apiToken = localStorage.getItem('apiToken');
         }
 
         const response = await callAPI('abort-build', apiToken, 'POST');
-        console.log('Abort build response:', response);
+        console.log(response);
 
         if (response && response.message) {
             if (response.message === "Build process forcefully terminated." ||
                 response.message === "Attempted force abort with errors." ||
                 response.message.includes("failed")) {
-
-                abortSuccessful = true;
-
-                if (abortButton) {
-                    abortButton.disabled = false;
-                    abortButton.textContent = 'Abort build';
-                    abortButton.style.cursor = 'pointer';
-                }
-
                 showStatus(response.message === "Build process forcefully terminated." ?
                         'Build process aborted.' : 'Build aborted with some errors.',
                     response.message === "Build process forcefully terminated.");
-
-                stopBuildStatusCheck();
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                hideLoadingOverlay();
-                enableInteractions();
             } else {
                 showStatus(response.message, false);
-                if (abortButton) {
-                    abortButton.disabled = false;
-                    abortButton.style.cursor = 'pointer';
-                    abortButton.textContent = 'Abort build';
-                }
             }
         } else {
-            throw new Error('Invalid response from server');
+            showStatus('Invalid response from server', false);
         }
     } catch (error) {
         console.error('Error during abort:', error);
-
         if (error.message.includes('Bad file descriptor') ||
             error.message.includes('socket') ||
             error.message.includes('connection')) {
-
-            abortSuccessful = true;
-
-            if (abortButton) {
-                abortButton.disabled = false;
-                abortButton.textContent = 'Abort build';
-                abortButton.style.cursor = 'pointer';
-            }
-
             showStatus('Build process aborted (connection closed).', true);
-            stopBuildStatusCheck();
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            hideLoadingOverlay();
-            enableInteractions();
         } else {
             showStatus(`Error aborting build: ${error.message}`, false);
-            if (abortButton) {
-                abortButton.disabled = false;
-                abortButton.style.cursor = 'pointer';
-                abortButton.textContent = 'Abort build';
-            }
         }
     } finally {
-        if (abortSuccessful && abortButton) {
-            abortButton.style.display = 'none';
+        stopBuildStatusCheck();
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        hideLoadingOverlay();
+        enableInteractions();
+
+        if (abortButton) {
+            abortButton.disabled = false;
+            abortButton.textContent = 'Abort build';
+            abortButton.style.cursor = 'pointer';
         }
     }
 }
@@ -392,7 +360,7 @@ async function buildProject(apiToken) {
     disableInteractions();
 
     try {
-        await saveFile(false, apiToken);
+        await saveFile(false, apiToken, false);
         const buildResponse = await callAPI('build', apiToken);
 
         if (buildResponse && (buildResponse.status === 'started' || buildResponse.message === 'Build process started in background.')) {
@@ -1615,6 +1583,7 @@ function handleBuildStatus(status) {
                 fetchLatestLogs(localStorage.getItem('apiToken'));
                 fetchSchedule();
                 listMediaFiles();
+                showAbortButton();
                 localStorage.removeItem('buildStatus');
                 break;
             case 'no_builds':
@@ -2720,7 +2689,7 @@ function saveBuildStatus(status) {
     localStorage.setItem('buildStatus', status);
 }
 
-async function saveFile(status = false, apiToken) {
+async function saveFile(status = false, apiToken, isUserInitiated = false) {
     const blocks = Array.from(document.querySelectorAll('.part-python, .part-bash'))
         .map(part => {
             const editorContainer = part.querySelector('.editor-wrapper > div');
@@ -2757,17 +2726,20 @@ async function saveFile(status = false, apiToken) {
 
         const response = await callAPI('save-file', apiToken, 'POST', formData, headers);
 
-        if (response.message === "File saved successfully!") {
-            showStatus('Saved successfully!', true);
-        } else {
-            showStatus('Save failed!', false);
+        if (isUserInitiated) {
+            if (response.message === "File saved successfully!") {
+                showStatus('Saved successfully!', true);
+            } else {
+                showStatus('Save failed!', false);
+            }
         }
 
         if (response.message === "File saved successfully!") {
             window.scrollTo(0, 0);
         }
 
-    } catch (error) {
+    } catch
+        (error) {
         console.error('Error saving file:', error);
         showStatus('Error saving file!', false);
     }
@@ -2839,10 +2811,10 @@ function setupEventListeners(apiToken) {
     const saveButton = document.getElementById('save-button');
 
     if (saveAction && verifyAction && buildAction && saveButton) {
-        saveAction.addEventListener('click', () => saveFile(true, apiToken));
+        saveAction.addEventListener('click', () => saveFile(true, apiToken, true));
         verifyAction.addEventListener('click', () => verifyCode(apiToken));
         buildAction.addEventListener('click', () => buildProject(apiToken));
-        saveButton.addEventListener('click', () => saveFile(true, apiToken));
+        saveButton.addEventListener('click', () => saveFile(true, apiToken, true));
     } else {
         console.error('One or more action buttons are missing.');
     }
