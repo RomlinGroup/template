@@ -357,6 +357,7 @@ function showAbortButton() {
 }
 
 async function buildProject(apiToken) {
+    window.isCurrentlyBuilding = true;
     disableInteractions();
 
     try {
@@ -380,9 +381,12 @@ async function buildProject(apiToken) {
         reattachToggleListeners();
     } catch (error) {
         console.error('Failed to build project:', error);
+        window.isCurrentlyBuilding = false;
         showStatus(`Error: ${error.message}`, false);
         hideLoadingOverlay();
         enableInteractions();
+    } finally {
+        window.isCurrentlyBuilding = false;
     }
 }
 
@@ -567,19 +571,34 @@ async function checkHeartbeat(apiToken) {
 
     try {
         const data = await callAPI('heartbeat', apiToken, 'GET');
-        const date = new Date(data.server_time);
-        const formattedDate = date.toLocaleString('sv-SE', {
-            hour: '2-digit', minute: '2-digit', hour12: false
+
+        let serverTime;
+        if (data.timestamp && typeof data.timestamp === 'number') {
+            serverTime = new Date(data.timestamp * 1000);
+        } else {
+            serverTime = new Date();
+            console.warn('Invalid server timestamp received, using local time');
+        }
+
+        const formattedDate = serverTime.toLocaleString('sv-SE', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
         });
+
         heartbeatTime.textContent = formattedDate;
         heartbeatDot.classList.remove('disconnected');
         heartbeatDot.classList.add('connected');
+
         disconnectedCount = 0;
 
-        if (isBuilding) {
-            isBuilding = false;
-            hideLoadingOverlay();
-            enableInteractions();
+        if (!window.isCurrentlyBuilding) {
+            if (isBuilding) {
+                isBuilding = false;
+                hideLoadingOverlay();
+                enableInteractions();
+            }
         }
     } catch (error) {
         handleDisconnection(error);
@@ -1561,6 +1580,12 @@ function handleBuildStatus(status) {
     saveBuildStatus(status);
 
     if (status.startsWith('in_progress')) {
+        window.isCurrentlyBuilding = true;
+    } else if (status === 'aborted' || status === 'completed' || status === 'failed') {
+        window.isCurrentlyBuilding = false;
+    }
+
+    if (status.startsWith('in_progress')) {
         const step = status.split(': ')[1] || 'Unknown step';
         const stepIndex = BUILD_STEPS.indexOf(step);
 
@@ -1904,7 +1929,7 @@ async function initializeApp(apiToken) {
         window.initialLoadComplete = true;
 
         initBuildStatusCheck();
-        setInterval(() => checkHeartbeat(apiToken), 5000);
+        setInterval(() => checkHeartbeat(apiToken), 1000);
 
     } catch (error) {
         console.error('Error initializing app:', error);
