@@ -239,6 +239,7 @@ function addBlock(type) {
             scrollBeyondLastColumn: 0,
             scrollBeyondLastLine: false,
             scrollbar: {
+                alwaysConsumeMouseWheel: false,
                 horizontal: 'hidden',
                 vertical: 'hidden'
             },
@@ -1257,10 +1258,16 @@ async function fetchEvalData() {
             const sanitizedPublicPath = encodeURI(file.public);
 
             if (file.type.startsWith('text/') && file.public.endsWith('output.txt')) {
-                await fetchAndDisplayTextFile({...file, public: sanitizedPublicPath}, outputContent);
+                await fetchAndDisplayTextFile({
+                    ...file,
+                    public: sanitizedPublicPath
+                }, outputContent);
                 hasOutput = true;
             } else if (file.type === 'audio/x-wav' && file.public.endsWith('output.wav')) {
-                displayAudioFile({...file, public: sanitizedPublicPath}, outputContent);
+                displayAudioFile({
+                    ...file,
+                    public: sanitizedPublicPath
+                }, outputContent);
                 hasOutput = true;
             }
         }
@@ -1747,6 +1754,7 @@ function initializeHookScriptEditor() {
         scrollBeyondLastColumn: 0,
         scrollBeyondLastLine: false,
         scrollbar: {
+            alwaysConsumeMouseWheel: false,
             horizontal: 'hidden',
             vertical: 'hidden'
         },
@@ -1822,8 +1830,16 @@ function initializeMonacoEditorForExistingBlocks() {
                     },
                     inherit: true,
                     rules: [
-                        {token: '', background: '060c4d', foreground: 'ffffff'},
-                        {token: 'comment', foreground: 'cccccc', fontStyle: 'italic'},
+                        {
+                            token: '',
+                            background: '060c4d',
+                            foreground: 'ffffff'
+                        },
+                        {
+                            token: 'comment',
+                            foreground: 'cccccc',
+                            fontStyle: 'italic'
+                        },
                         {token: 'keyword', foreground: '31efb8'}
                     ]
                 });
@@ -1849,6 +1865,7 @@ function initializeMonacoEditorForExistingBlocks() {
                     scrollBeyondLastColumn: 0,
                     scrollBeyondLastLine: false,
                     scrollbar: {
+                        alwaysConsumeMouseWheel: false,
                         horizontal: 'hidden',
                         vertical: 'hidden'
                     },
