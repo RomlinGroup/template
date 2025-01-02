@@ -257,11 +257,14 @@ function addBlock(type) {
         });
 
         const updateHeight = () => {
-            const contentHeight = Math.max(100, Math.min(1000, editor.getContentHeight()));
+            const contentHeight = Math.max(100, editor.getContentHeight());
             editorContainer.style.height = `${contentHeight}px`;
             editor.layout();
         };
 
+        editor.onDidChangeModelContent(updateHeight);
+        window.addEventListener('resize', () => requestAnimationFrame(updateHeight));
+        editorContainer.addEventListener('wheel', () => requestAnimationFrame(updateHeight), {passive: true});
         editor.onDidContentSizeChange(updateHeight);
         updateHeight();
     });
@@ -1774,11 +1777,14 @@ function initializeHookScriptEditor() {
     window.hookScriptEditor = editor;
 
     const updateHeight = () => {
-        const contentHeight = Math.max(200, Math.min(600, editor.getContentHeight()));
-        hookScriptContainer.style.height = `${contentHeight}px`;
+        const contentHeight = Math.max(100, editor.getContentHeight());
+        editorContainer.style.height = `${contentHeight}px`;
         editor.layout();
     };
 
+    editor.onDidChangeModelContent(updateHeight);
+    window.addEventListener('resize', () => requestAnimationFrame(updateHeight));
+    editorContainer.addEventListener('wheel', () => requestAnimationFrame(updateHeight), {passive: true});
     editor.onDidContentSizeChange(updateHeight);
     updateHeight();
 
@@ -1885,11 +1891,14 @@ function initializeMonacoEditorForExistingBlocks() {
                 editor.setValue(initialValue);
 
                 const updateHeight = () => {
-                    const contentHeight = Math.max(100, Math.min(1000, editor.getContentHeight()));
+                    const contentHeight = Math.max(100, editor.getContentHeight());
                     editorContainer.style.height = `${contentHeight}px`;
                     editor.layout();
                 };
 
+                editor.onDidChangeModelContent(updateHeight);
+                window.addEventListener('resize', () => requestAnimationFrame(updateHeight));
+                editorContainer.addEventListener('wheel', () => requestAnimationFrame(updateHeight), {passive: true});
                 editor.onDidContentSizeChange(updateHeight);
                 updateHeight();
 
